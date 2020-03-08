@@ -332,7 +332,7 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,plot,midd
             
 ######################################################################################################
 
-def get_p0(Fit,fittype,Nexp,allcorrs):
+def get_p0(Fit,fittype,Nexp,allcorrs,prior):
     # We want to take in several scenarios in this order, choosing the highest in preference. 
     # 1) This exact fit has been done before, modulo priors, svds t0s etc
     # 2) Same but different type of fit, eg marginalised 
@@ -386,9 +386,10 @@ def get_p0(Fit,fittype,Nexp,allcorrs):
             pnexp = pickle.load(pickle_off)
             pickle_off.close()
             for key in pnexp:
-                del p0[key]
-                p0[key] = pnexp[key]
-                print('Loaded {0} p0 from global Nexp'.format(key))
+                if key in prior:
+                    del p0[key]
+                    p0[key] = pnexp[key]
+                    print('Loaded {0} p0 from global Nexp'.format(key))
     
     else:
         p0 = None
@@ -469,7 +470,7 @@ def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,curre
     models = modelsA
     print('Models',models)
     fitter = cf.CorrFitter(models=models, fitter='gsl_multifit', alg='subspace2D', solver='cholesky', maxit=5000, fast=False, tol=(1e-6,0.0,0.0))
-    p0 = get_p0(Fit,'chained',Nexp,allcorrs)
+    p0 = get_p0(Fit,'chained',Nexp,allcorrs,prior)
     #print('p0',p0)
     print(30 * '=','Chained-Unmarginalised','Nexp =',Nexp,'Date',datetime.datetime.now())
     fit = fitter.chained_lsqfit(data=data, prior=prior, p0=p0, add_svdnoise=svdnoise, add_priornoise=priornoise)
