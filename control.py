@@ -38,7 +38,7 @@ F['tminKNG'] = 3                            # 3 for 5 twists, 5 for first 4
 F['Stmin'] = 2
 F['Vtmin'] = 2
 F['Ttmin'] = 2
-F['an'] = '0.10(05)'
+F['an'] = '0.1(1)'
 F['SVnn0'] = '0.5(5)'                        #prior for SV_nn[0][0]
 F['SVn'] = '0.01(15)'                        #Prior for SV_??[n][n]
 F['SV0'] = '0.3(5)'                          #Prior for SV_no[0][0] etc
@@ -49,7 +49,7 @@ F['TVnn0'] = '0.5(5)'
 F['TVn'] = '0.01(15)'
 F['TV0'] = '0.3(5)'
 F['Ttw0'] = '0.0001(1)'
-F['loosener'] = 0.05                          #Loosener on a_eff
+F['loosener'] = 0.10                          #Loosener on a_eff
 F['Mloosener'] = 0.05                        #Loosener on ground state 
 F['oMloosener'] = 0.2                       #Loosener on oscillating ground state
 F['a'] = 0.1715/(1.9006*0.1973)
@@ -117,7 +117,7 @@ Fit = F                                               # Choose to fit F, SF or U
 FitMasses = [1]#,1,2,3]                                 # Choose which masses to fit
 FitTwists = [2]#1,2,3,4]                               # Choose which twists to fit
 FitTs = [0,1,2]
-FitCorrs = [['KNG']]#,['KG'],['S']]#,'BNG','KG','KNG']#,'S','V','T']  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
+FitCorrs = [['BG'],['KG'],['S']]#,['V'],['T']]]  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
 Chained = True   # If False puts all correlators above in one fit no matter how they are organised
 Marginalised = False #True
 svdnoise = False
@@ -125,7 +125,7 @@ priornoise = False
 ResultPlots = False         # Tell what to plot against, "Q", "N","Log(GBF)", False
 SvdFactor = 1.0                       # Multiplies saved SVD
 PriorLoosener = 1.0                   # Multiplies all prior error by loosener
-Nmax = 6                               # Number of exp to fit for 2pts in chained, marginalised fit
+Nmax = 4                               # Number of exp to fit for 2pts in chained, marginalised fit
 FitToGBF = False                     # If false fits to Nmax
 ##############################################################
 setup = ['KG-S-BG','KG-V-BNG','KNG-T-BNG']
@@ -162,6 +162,6 @@ def main():
 #        do_unchained_fit()             #Will for to NMax
 
     prior = make_prior(Fit,Nmax,allcorrs,currents,daughters,parents,PriorLoosener,data,False,middle,gap,notwist0,non_oscillating)
-    do_chained_fit(data,prior,Nmax,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener)
+    do_chained_fit(data,prior,Nmax,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs)
     return()
 main()

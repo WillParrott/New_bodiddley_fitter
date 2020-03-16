@@ -332,7 +332,7 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,plot,midd
             
 ######################################################################################################
 
-def get_p0(Fit,fittype,Nexp,allcorrs,prior):
+def get_p0(Fit,fittype,Nexp,allcorrs,prior,FitCorrs):
     # We want to take in several scenarios in this order, choosing the highest in preference. 
     # 1) This exact fit has been done before, modulo priors, svds t0s etc
     # 2) Same but different type of fit, eg marginalised 
@@ -342,49 +342,37 @@ def get_p0(Fit,fittype,Nexp,allcorrs,prior):
     # 5b) Some elements of the fit have been fitted in other combinations before
 
     
-    filename1 = 'p0/{0}{1}{2}{3}{4}{5}{6}{7}.pickle'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],allcorrs,Fit['Ts'],fittype,Nexp)
-    filename2 = 'p0/{0}{1}{2}{3}{4}{5}{6}.pickle'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],allcorrs,Fit['Ts'],Nexp)
-    filename3 = 'p0/{0}{1}{2}{3}{4}{5}{6}{7}.pickle'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],allcorrs,Fit['Ts'],fittype,Nexp+1)
-    filename4 = 'p0/{0}{1}{2}{3}{4}{5}{6}{7}.pickle'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],allcorrs,Fit['Ts'],fittype,Nexp-1)
-    filename5a = 'p0/{0}{1}{2}.pickle'.format(Fit['conf'],Fit['filename'],Nexp)
-    filename5b = 'p0/{0}{1}.pickle'.format(Fit['conf'],Fit['filename'])
+    filename1 = 'p0/{0}{1}{2}{3}{4}{5}{6}{7}{8}'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],allcorrs,FitCorrs,Fit['Ts'],fittype,Nexp)
+    filename2 = 'p0/{0}{1}{2}{3}{4}{5}{6}'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],allcorrs,Fit['Ts'],Nexp)
+    filename3 = 'p0/{0}{1}{2}{3}{4}{5}{6}{7}{8}'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],allcorrs,FitCorrs,Fit['Ts'],fittype,Nexp+1)
+    filename4 = 'p0/{0}{1}{2}{3}{4}{5}{6}{7}{8}'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],allcorrs,FitCorrs,Fit['Ts'],fittype,Nexp-1)
+    filename5a = 'p0/{0}{1}{2}'.format(Fit['conf'],Fit['filename'],Nexp)
+    filename5b = 'p0/{0}{1}'.format(Fit['conf'],Fit['filename'])
     #case 1
     if os.path.isfile(filename1):
-        pickle_off = open(filename1,"rb")
-        p0 = pickle.load(pickle_off)
-        pickle_off.close()
+        p0 = gv.load(filename1)
         print('Loaded p0 from exact fit')
     #case 2
     
     elif os.path.isfile(filename2):
-        pickle_off = open(filename2,"rb")
-        p0 = pickle.load(pickle_off)
-        pickle_off.close()
+        p0 = gv.load(filename2)
         print('Loaded p0 from exact fit of different type')
     #case 3    
     elif os.path.isfile(filename3):
-        pickle_off = open(filename3,"rb")
-        p0 = pickle.load(pickle_off)
-        pickle_off.close()
+        p0 = gv.load(filename3)
         print('Loaded p0 from exact fit Nexp+1')
         
     #case 4    
     elif os.path.isfile(filename4):
-        pickle_off = open(filename4,"rb")
-        p0 = pickle.load(pickle_off)
-        pickle_off.close()
+        p0 = gv.load(filename4)
         print('Loaded p0 from exact fit Nexp-1')
         
     #case 5    
     elif os.path.isfile(filename5b):
-        pickle_off = open(filename5b,"rb")
-        p0 = pickle.load(pickle_off)
-        pickle_off.close()
+        p0 = gv.load(filename5b)
         print('Loaded global p0')
         if os.path.isfile(filename5a):
-            pickle_off = open(filename5a,"rb")
-            pnexp = pickle.load(pickle_off)
-            pickle_off.close()
+            pnexp = gv.load(filename5a)
             for key in pnexp:
                 if key in prior:
                     del p0[key]
@@ -396,55 +384,53 @@ def get_p0(Fit,fittype,Nexp,allcorrs,prior):
     return(p0)
 ######################################################################################################
 
-def update_p0(p,Fit,fittype,Nexp,allcorrs):
+def update_p0(p,finalp,Fit,fittype,Nexp,allcorrs,FitCorrs):
     # We want to take in several scenarios in this order 
     # 1) This exact fit has been done before, modulo priors, svds t0s etc
     # 2) Same but different type of fit, eg marginalised 
     # 3) Global Nexp
     # 4) Global
-    filename1 = 'p0/{0}{1}{2}{3}{4}{5}{6}{7}.pickle'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],allcorrs,Fit['Ts'],fittype,Nexp)
-    filename2 = 'p0/{0}{1}{2}{3}{4}{5}{6}.pickle'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],allcorrs,Fit['Ts'],Nexp)
-    filename3 = 'p0/{0}{1}{2}.pickle'.format(Fit['conf'],Fit['filename'],Nexp)
-    filename4 = 'p0/{0}{1}.pickle'.format(Fit['conf'],Fit['filename'])
+    filename1 = 'p0/{0}{1}{2}{3}{4}{5}{6}{7}{8}'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],allcorrs,FitCorrs,Fit['Ts'],fittype,Nexp)
+    filename2 = 'p0/{0}{1}{2}{3}{4}{5}{6}'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],allcorrs,Fit['Ts'],Nexp)
+    filename3 = 'p0/{0}{1}{2}'.format(Fit['conf'],Fit['filename'],Nexp)
+    filename4 = 'p0/{0}{1}'.format(Fit['conf'],Fit['filename'])
 
     #case 1
-    pickle_on = open(filename1,"wb")
-    pickle.dump(p,pickle_on)
-    pickle_on.close()
-
+    gv.dump(p,filename1)
+    
     #case 2
-    pickle_on = open(filename2,"wb")
-    pickle.dump(p,pickle_on)
-    pickle_on.close()
+    gv.dump(finalp,filename2)
 
     #case 3
-    pickle_on = open(filename3,"wb")
-    pickle.dump(p,pickle_on)
-    pickle_on.close()
-    
-    if os.path.isfile(filename4):
-        pickle_off = open(filename4,"rb")
-        p0 = pickle.load(pickle_off)
-        pickle_off.close()
-        for key in p:
-            if key in p0:
-                if len(np.shape(p0[key])) == 1 and len(p0[key]) <= Nexp:
-                    p0[key] = p[key]
-                    print('Updated global p0 {0}'.format(key))
-                elif np.shape(p0[key])[0] <= Nexp:
-                    p0[key] = p[key]
-                    print('Updated global p0 {0}'.format(key))
-            else:
-                p0[key] =  p[key]
-                print('Added new element to global p0 {0}'.format(key))
-        pickle_on = open(filename4,"wb")
-        pickle.dump(p0,pickle_on)
-        pickle_on.close()
+    if os.path.isfile(filename3):
+        p0 = gv.load(filename3) #load exisiting global Nexp
+        for key in finalp:  # key in this output
+            p0[key] =  finalp[key]  #Update exisiting and add new
+        gv.dump(p0,filename3)
     
     else:
-        pickle_on = open(filename4,"wb")
-        pickle.dump(p,pickle_on)
-        pickle_on.close()
+        gv.dump(finalp,filename3)
+
+    if os.path.isfile(filename4):
+        p0 = gv.load(filename4) # load existing, could be any length
+        for key in finalp:  # key in new 
+            if key in p0: # if 
+                if len(np.shape(p0[key])) == 1 and len(p0[key]) <= Nexp:
+                    #print('shape p0[key]',np.shape(p0[key]),key)
+                    del p0[key]
+                    p0[key] = finalp[key]
+                    print('Updated global p0 {0}'.format(key))
+                elif np.shape(p0[key])[0] <= Nexp:
+                    #print('shape p0[key]',np.shape(p0[key]),key)
+                    del p0[key]
+                    p0[key] = finalp[key]
+                    print('Updated global p0 {0}'.format(key))
+            else:
+                p0[key] =  finalp[key]
+                print('Added new element to global p0 {0}'.format(key))
+        gv.dump(p0,filename4)
+    else:
+        gv.dump(finalp,filename4)
     return()
 
 ######################################################################################################
@@ -463,22 +449,35 @@ def save_fit(fit,Fit,allcorrs,fittype,Nexp,SvdFactor,PriorLoosener,currents):
 
 ######################################################################################################
 
-def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener):
+def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs):
     #do chained fit with no marginalisation Nexp = NMax
     if len(modelsB[0]) !=0: 
         modelsA.extend(modelsB)
     models = modelsA
     print('Models',models)
     fitter = cf.CorrFitter(models=models, fitter='gsl_multifit', alg='subspace2D', solver='cholesky', maxit=5000, fast=False, tol=(1e-6,0.0,0.0))
-    p0 = get_p0(Fit,'chained',Nexp,allcorrs,prior)
+    p0 = get_p0(Fit,'chained',Nexp,allcorrs,prior,FitCorrs)
     #print('p0',p0)
     print(30 * '=','Chained-Unmarginalised','Nexp =',Nexp,'Date',datetime.datetime.now())
     fit = fitter.chained_lsqfit(data=data, prior=prior, p0=p0, add_svdnoise=svdnoise, add_priornoise=priornoise)
     print(fit)
     if fit.Q > 0.05: #threshold for a 'good' fit
-        update_p0(fit.pmean,Fit,'chained',Nexp,allcorrs) #fittype=chained, for marg,includeN
+        update_p0([f.pmean for f in fit.chained_fits.values()],fit.pmean,Fit,'chained',Nexp,allcorrs,FitCorrs) #fittype=chained, for marg,includeN
         save_fit(fit,Fit,allcorrs,'chained',Nexp,SvdFactor,PriorLoosener,currents)
     #print_fit_results(fit) do this later
     return()
 
 ######################################################################################################
+
+def print_p_p0(p,p0,prior):
+    print('{0:<30}{1:<20}{2:<40}{3:<20}'.format('key','p','p0','prior'))
+    for key in prior:
+        if len(np.shape(p[key])) ==1 :
+            for element in range(len(p[key])):
+                if element == 0:
+                    print('{0:<30}{1:<20}{2:<40}{3:<20}'.format(key,p[key][element],p0[key][element],prior[key][element]))
+                else:
+                    print('{0:>30}{1:<20}{2:<40}{3:<20}'.format('',p[key][element],p0[key][element],prior[key][element]))
+    return()
+
+#####################################################################################################
