@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.ticker import MultipleLocator
 from functions import *
+from plotting import *
 plt.rc("font",**{"size":18})
 import os.path
 import pickle
@@ -112,7 +113,6 @@ SF['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
 
 ################ USER INPUTS ################################
 #############################################################
-TestData = False
 Fit = F                                               # Choose to fit F, SF or UF
 FitMasses = [1]#,1,2,3]                                 # Choose which masses to fit
 FitTwists = [2]#1,2,3,4]                               # Choose which twists to fit
@@ -140,6 +140,8 @@ gap = 1/14                        #gap in the Meff Aeff estimate 1/14 works well
 def main():
     # get which correlators we want
     daughters,currents,parents = read_setup(setup)
+    # plots corrs if first time with this data file 
+    plots(Fit,daughters,parents,currents)
     allcorrs,links,parrlinks = elements_in_FitCorrs(FitCorrs)
     # remove masses and twists we don't want to fit
     make_params(Fit,FitMasses,FitTwists,FitTs,daughters,currents,parents)
@@ -150,17 +152,7 @@ def main():
         modelsA,modelsB = make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents,SvdFactor,Chained,allcorrs,links,parrlinks)
     else: 
         models,svdcut = make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents,SvdFactor,Chained,allcorrs,links,parrlinks)
-    # do fit
-#    if Chained:
-#        if Marginalised != False:
-#            do_chained_marginalised_fit(Marginalised)  #Will fit to numbers in Marginalised and Nmax
-#        else:
-#            prior = make_prior(Fit,NMax,allcorrs,currents,daughters,parents,loosener,data,plot,tp,middle,gap)
-#            do_chained_fit(prior,modelsA,modelsB,Fit,svdnoise,priornoise)                #Will fit to NMax
-#    elif FitToGBF:
-#        do_uncahined_GBF_fit()         #Will fit to GBF if GBF == True
-#    else:
-#        do_unchained_fit()             #Will for to NMax
+############################ Do chained fit #########################################################
     if Chained:
         if FitToGBF:
             N = 2
@@ -176,10 +168,25 @@ def main():
             for N in range(2,Nmax+1):
                 prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,False,middle,gap,notwist0,non_oscillating)
                 do_chained_fit(data,prior,N,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,None)
+######################### Do unchained fit ############################################################
+    else:
+        if FitToGBF:
+            N = 2
+            GBF1 = -1e10
+            GBF2 = GBF1 + 10
+            while GBF2-GBF1 > 1:
+                GBF1 = GBF2
+                prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,False,middle,gap,notwist0,non_oscillating)
+                GBF2 = do_unchained_fit(data,prior,N,models,svdcut,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,SaveFit,GBF1)
+                N += 1
+            
+        else:
+            for N in range(2,Nmax+1):
+                prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,False,middle,gap,notwist0,non_oscillating)
+                do_unchained_fit(data,prior,N,models,svdcut,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,SaveFit,None)        
 
 
-
-
+#####################################################################################################
             
     return()
 main()

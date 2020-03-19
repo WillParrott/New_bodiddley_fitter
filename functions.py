@@ -11,6 +11,7 @@ plt.rc("font",**{"size":18})
 import datetime
 import os
 import pickle
+from plotting import *
 #######################################################################################################
 
 def read_setup(setup):
@@ -25,37 +26,8 @@ def read_setup(setup):
         parents.append(lab[2])
     return(daughters,currents,parents)
 
-#######################################################################################################
+######################################################################################################
 
-def unmake_gvar_vec(vec):
-    #A function which extracts the mean and standard deviation of a list of gvars
-    mean = []
-    sdev = []
-    for element in vec:
-        mean.append(vec[element].mean)
-        sdev.append(vec[element].sdev)
-    return(mean,sdev)
-
-#######################################################################################################
-
-def create_single_plot(filename,location,x,y,xlabel,ylabel):
-    #Plots x against y where x is a list of floats and y of gvars
-    figsca = 16 
-    ymean,yerr = unmake_gvar_vec(y)
-    plt.figure(filename,figsize=((figsca,2*figsca/(1+np.sqrt(5)))))
-    plt.rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
-    plt.rc('text', usetex=True)
-    plt.errorbar(x,ymean,yerr=yerr,fmt='ko',ms=12)
-    plt.axes().tick_params(labelright=True,which='both',width=2,labelsize=30)
-    plt.axes().tick_params(which='major',length=15)
-    plt.axes().tick_params(which='minor',length=8)
-    plt.axes().yaxis.set_ticks_position('both')
-    plt.xlabel(rxlabel,fontsize=30)
-    plt.ylabel(rylabel,fontsize=30)
-    plt.tight_layout()
-    plt.savefig('Plots/{0}/{1}'.format(location,filename))
-    
-#######################################################################################################
 
 def make_params(Fit,FitMasses,FitTwists,FitTs,daughters,currents,parents):
     #Removes things we do not want to fit, specified by FitMasses, FitTwists, FitTs assumes parents have varing mass and daughters varing twist
@@ -449,7 +421,7 @@ def save_fit(fit,Fit,allcorrs,fittype,Nexp,SvdFactor,PriorLoosener,currents):
 
 ######################################################################################################
 
-def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,save,GBF):
+def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,save,GBF):#if GBF = None doesn't pass GBF, else passed GBF 
     #do chained fit with no marginalisation Nexp = NMax
     if len(modelsB[0]) !=0: 
         modelsA.extend(modelsB)
@@ -481,6 +453,39 @@ def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,curre
             save_fit(fit,Fit,allcorrs,'chained',Nexp,SvdFactor,PriorLoosener,currents)
             #print_fit_results(fit) do this later
         return(fit.logGBF)
+
+######################################################################################################
+
+def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,save,GBF):#if GBF = None doesn't pass GBF, else passed GBF 
+    #do chained fit with no marginalisation Nexp = NMax
+    print('Models',models)
+    fitter = cf.CorrFitter(models=models, fitter='gsl_multifit', alg='subspace2D', solver='cholesky', maxit=5000, fast=False, tol=(1e-6,0.0,0.0))
+    p0 = get_p0(Fit,'unchained',Nexp,allcorrs,prior,allcorrs) # FitCorrs = allcorrs 
+    #print('p0',p0)
+    print(30 * '=','Unchained-Unmarginalised','Nexp =',Nexp,'Date',datetime.datetime.now())
+    fit = fitter.lsqfit(data=data, prior=prior, p0=p0, svdcut=svdcut, add_svdnoise=svdnoise, add_priornoise=priornoise)
+    if fit.Q > 0.05: #threshold for a 'good' fit
+        update_p0(fit.pmean,fit.pmean,Fit,'unchained',Nexp,allcorrs,allcorrs) #fittype=chained, for marg,includeN
+    if GBF == None:
+        print(fit)
+        if fit.Q > 0.05 and save: #threshold for a 'good' fit
+            save_fit(fit,Fit,allcorrs,'unchained',Nexp,SvdFactor,PriorLoosener,currents)
+            #print_fit_results(fit) do this later
+        return()
+    elif fit.logGBF - GBF < 1 and fit.logGBF - GBF > 0:
+        print('log(GBF) went up by less than 1: {0:.2f}'.format(fit.logGBF - GBF))
+        return(fit.logGBF)
+    elif fit.logGBF - GBF < 0:
+        print('log(GBF) went down {0:.2f}'.format(fit.logGBF - GBF))
+        return(fit.logGBF)
+    else:
+        print(fit)
+        print('log(GBF) went up {0:.2f}'.format(fit.logGBF - GBF))
+        if fit.Q > 0.05 and save: #threshold for a 'good' fit
+            save_fit(fit,Fit,allcorrs,'unchained',Nexp,SvdFactor,PriorLoosener,currents)
+            #print_fit_results(fit) do this later
+        return(fit.logGBF)
+
 
 ######################################################################################################
 
