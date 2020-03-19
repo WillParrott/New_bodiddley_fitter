@@ -449,7 +449,7 @@ def save_fit(fit,Fit,allcorrs,fittype,Nexp,SvdFactor,PriorLoosener,currents):
 
 ######################################################################################################
 
-def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs):
+def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,save,GBF):
     #do chained fit with no marginalisation Nexp = NMax
     if len(modelsB[0]) !=0: 
         modelsA.extend(modelsB)
@@ -460,12 +460,27 @@ def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,curre
     #print('p0',p0)
     print(30 * '=','Chained-Unmarginalised','Nexp =',Nexp,'Date',datetime.datetime.now())
     fit = fitter.chained_lsqfit(data=data, prior=prior, p0=p0, add_svdnoise=svdnoise, add_priornoise=priornoise)
-    print(fit)
     if fit.Q > 0.05: #threshold for a 'good' fit
         update_p0([f.pmean for f in fit.chained_fits.values()],fit.pmean,Fit,'chained',Nexp,allcorrs,FitCorrs) #fittype=chained, for marg,includeN
-        save_fit(fit,Fit,allcorrs,'chained',Nexp,SvdFactor,PriorLoosener,currents)
-    #print_fit_results(fit) do this later
-    return()
+    if GBF == None:
+        print(fit)
+        if fit.Q > 0.05 and save: #threshold for a 'good' fit
+            save_fit(fit,Fit,allcorrs,'chained',Nexp,SvdFactor,PriorLoosener,currents)
+            #print_fit_results(fit) do this later
+        return()
+    elif fit.logGBF - GBF < 1 and fit.logGBF - GBF > 0:
+        print('log(GBF) went up by less than 1: {0:.2f}'.format(fit.logGBF - GBF))
+        return(fit.logGBF)
+    elif fit.logGBF - GBF < 0:
+        print('log(GBF) went down {0:.2f}'.format(fit.logGBF - GBF))
+        return(fit.logGBF)
+    else:
+        print(fit)
+        print('log(GBF) went up {0:.2f}'.format(fit.logGBF - GBF))
+        if fit.Q > 0.05 and save: #threshold for a 'good' fit
+            save_fit(fit,Fit,allcorrs,'chained',Nexp,SvdFactor,PriorLoosener,currents)
+            #print_fit_results(fit) do this later
+        return(fit.logGBF)
 
 ######################################################################################################
 

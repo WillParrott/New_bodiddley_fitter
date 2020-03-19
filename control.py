@@ -117,16 +117,17 @@ Fit = F                                               # Choose to fit F, SF or U
 FitMasses = [1]#,1,2,3]                                 # Choose which masses to fit
 FitTwists = [2]#1,2,3,4]                               # Choose which twists to fit
 FitTs = [0,1,2]
-FitCorrs = [['BG'],['KG'],['S']]#,['V'],['T']]]  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
+FitCorrs = [['BG','BNG'],['KG','KNG'],[['S'],['V'],['T']]]  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
 Chained = True   # If False puts all correlators above in one fit no matter how they are organised
 Marginalised = False #True
+SaveFit = False
 svdnoise = False
 priornoise = False
 ResultPlots = False         # Tell what to plot against, "Q", "N","Log(GBF)", False
 SvdFactor = 1.0                       # Multiplies saved SVD
 PriorLoosener = 1.0                   # Multiplies all prior error by loosener
 Nmax = 4                               # Number of exp to fit for 2pts in chained, marginalised fit
-FitToGBF = False                     # If false fits to Nmax
+FitToGBF = True                     # If false fits to Nmax
 ##############################################################
 setup = ['KG-S-BG','KG-V-BNG','KNG-T-BNG']
 notwist0 = ['KNG','T'] #list any fits which do not use tw-0
@@ -160,8 +161,25 @@ def main():
 #        do_uncahined_GBF_fit()         #Will fit to GBF if GBF == True
 #    else:
 #        do_unchained_fit()             #Will for to NMax
+    if Chained:
+        if FitToGBF:
+            N = 2
+            GBF1 = -1e10
+            GBF2 = GBF1 + 10
+            while GBF2-GBF1 > 1:
+                GBF1 = GBF2
+                prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,False,middle,gap,notwist0,non_oscillating)
+                GBF2 = do_chained_fit(data,prior,N,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,GBF1)
+                N += 1
+            
+        else:
+            for N in range(2,Nmax+1):
+                prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,False,middle,gap,notwist0,non_oscillating)
+                do_chained_fit(data,prior,N,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,None)
 
-    prior = make_prior(Fit,Nmax,allcorrs,currents,daughters,parents,PriorLoosener,data,False,middle,gap,notwist0,non_oscillating)
-    do_chained_fit(data,prior,Nmax,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs)
+
+
+
+            
     return()
 main()
