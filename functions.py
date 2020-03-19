@@ -11,7 +11,7 @@ plt.rc("font",**{"size":18})
 import datetime
 import os
 import pickle
-from plotting import *
+#from plotting import *
 #######################################################################################################
 
 def read_setup(setup):

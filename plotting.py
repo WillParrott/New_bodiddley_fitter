@@ -17,8 +17,8 @@ def unmake_gvar_vec(vec):
     mean = []
     sdev = []
     for element in vec:
-        mean.append(vec[element].mean)
-        sdev.append(vec[element].sdev)
+        mean.append(element.mean)
+        sdev.append(element.sdev)
     return(mean,sdev)
 
 ######################################################################################################
@@ -59,56 +59,61 @@ def create_t_plot(location,filename,y1,y1label,y2=None,y2label=None,y3=None,y3la
 
 def plots(Fit,daughters,parents,currents):
     directory = './Plots/{0}'.format(Fit['filename'])
+    tp = Fit['tp']
     if not os.path.exists(directory):
         os.makedirs(directory)
         print("Creating all plots for {0}".format(Fit['filename']))
         data = make_data(Fit['filename'])
     else:
+        print("Plots for {0} already exist".format(Fit['filename']))
         return()
  ######### daughters #########
     for twist in Fit['twists']:
         y = collections.OrderedDict()
         ylog = collections.OrderedDict()
+        lab = []
         for i,corr in enumerate(set(daughters)):
             y[i] = []
+            lab.append(corr)
             tag = Fit['{0}-Tag'.format(corr)].format(twist)
-            filename = '{0}_tw{1}'.format(Fit['filename'],twist)
+            filename = 'daughter_tw{0}.pdf'.format(twist)
             for t in range(1,int(tp/2+1)):
                 y[i].append((data[tag][t]+data[tag][tp-t])/2)
-            if len(set(daughters)) == 1:
-                create_t_plot(directory,filename,y[0],set(daughters)[0])
-            else:
-                create_t_plot(directory,filename,y[0],set(daughters)[0],y[1],set(daughters)[1])
-            ylog[i] = []
-            filename = '{0}log_tw{1}'.format(Fit['filename'],twist)
+            ylog[i] = []     
             for t in range(1,int(tp/2+1)):
-                ylog[i].append(gv.log((data[tag][t]+data[tag][tp-t])/2))
-            if len(set(daughters)) == 1:
-                create_t_plot(directory,filename,ylog[0],set(daughters)[0])
-            else:
-                create_t_plot(directory,filename,ylog[0],set(daughters)[0],ylog[1],set(daughters)[1])
+                ylog[i].append(gv.log((data[tag][t]+data[tag][tp-t])/2)) 
+        if len(set(daughters)) == 1:
+            create_t_plot(directory,filename ,y[0],lab[0])
+            filename = 'daughter_tw{0}_log.pdf'.format(twist)
+            create_t_plot(directory,filename ,ylog[0],lab[0])
+        else:
+            create_t_plot(directory,filename,y[0],lab[0],y[1],lab[1])
+            filename = 'daughter_tw{0}_log.pdf'.format(twist)
+            create_t_plot(directory,filename,ylog[0],lab[0],ylog[1],lab[1])
  ######### parents #########
     for mass in Fit['masses']:
         y = collections.OrderedDict()
         ylog = collections.OrderedDict()
+        lab = []
         for i,corr in enumerate(set(parents)):
             y[i] = []
+            lab.append(corr)
             tag = Fit['{0}-Tag'.format(corr)].format(mass)
-            filename = '{0}_m{1}'.format(Fit['filename'],mass)
+            filename = 'parent_m{0}.pdf'.format(mass)
             for t in range(1,int(tp/2+1)):
                 y[i].append((data[tag][t]+data[tag][tp-t])/2)
-            if len(set(parents)) == 1:
-                create_t_plot(directory,filename,y[0],set(parents)[0])
-            else:
-                create_t_plot(directory,filename,y[0],set(parents)[0],y[1],set(parents)[1])
             ylog[i] = []
-            filename = '{0}_m{1}_log'.format(Fit['filename'],mass)
+            
             for t in range(1,int(tp/2+1)):
                 ylog[i].append(gv.log((data[tag][t]+data[tag][tp-t])/2))
-            if len(set(daughters)) == 1:
-                create_t_plot(directory,filename,ylog[0],set(daughters)[0])
-            else:
-                create_t_plot(directory,filename,ylog[0],set(parents)[0],ylog[1],set(parents)[1])
+        if len(set(parents)) == 1:
+            create_t_plot(directory,filename,y[0],lab[0])
+            filename = 'parent_m{0}_log.pdf'.format(mass)
+            create_t_plot(directory,filename,ylog[0],lab[0])
+        else:
+            create_t_plot(directory,filename,y[0],lab[0],y[1],lab[1])
+            filename = 'parent_m{0}_log.pdf'.format(mass)
+            create_t_plot(directory,filename,ylog[0],lab[0],ylog[1],lab[1])
  ########## currents ###########
     for num,corr in enumerate(currents):
         for mass in Fit['masses']:
@@ -118,20 +123,21 @@ def plots(Fit,daughters,parents,currents):
                 for i,T in enumerate(Fit['Ts']):
                     ylog[i] = []
                     tag = Fit['threePtTag{0}'.format(corr)].format(T,Fit['m_s'],mass,Fit['m_l'],twist)
-                    filename = '{0}_m{1}_tw{2}_log'.format(corr,mass,twist)
+                    filename = '{0}_m{1}_tw{2}_log.pdf'.format(corr,mass,twist)
                     for t in range(T):
                         ylog[i].append(gv.log(data[tag][i]))
+                    yrat[i] = []
+                    tagp = Fit['{0}-Tag'.format(parents[num])].format(mass)
+                    tagd = tag = Fit['{0}-Tag'.format(daughters[num])].format(twist)
+                    print(tagd,corr,tagp)
+                    for t in range(T):
+                        yrat[i].append(data[tag][i]/(data[tagd][t]*data[tagp][T-t]))
                 if len(Fit['Ts']) == 2:
                     create_t_plot(directory,filename,ylog[0],'T={0}'.format(Fit['Ts'][0]),ylog[1],'T={0}'.format(Fit['Ts'][1]))
                 if len(Fit['Ts']) == 3:
                     create_t_plot(directory,filename,ylog[0],'T={0}'.format(Fit['Ts'][0]),ylog[1],'T={0}'.format(Fit['Ts'][1]),ylog[2],'T={0}'.format(Fit['Ts'][2]))
                     ###### divide ######
-                    yrat[i] = []
-                    tagp = Fit['{0}-Tag'.format(parents[num])].format(mass)
-                    tagd = tag = Fit['{0}-Tag'.format(daughters[num])].format(twist)
-                    filename = '{0}_m{1}_tw{2}_rat'.format(corr,mass,twist)
-                    for t in range(T):
-                        yrat[i].append(data[tag][i]/(data[tagd][t]*data[tagp][T-t]))
+                filename = '{0}_m{1}_tw{2}_rat.pdf'.format(corr,mass,twist)
                 if len(Fit['Ts']) == 2:
                     create_t_plot(directory,filename,yrat[0],'T={0}'.format(Fit['Ts'][0]),yrat[1],'T={0}'.format(Fit['Ts'][1]))
                 if len(Fit['Ts']) == 3:
@@ -139,8 +145,4 @@ def plots(Fit,daughters,parents,currents):
     return()
 
 ######################################################################################################
-plt.figure('log{0}'.format(twist))
-            for t in range(1,int(tp/2+1)):                
-                plt.errorbar(t, gv.log((data[TwoPts['KGtw{0}'.format(twist)]][t]+data[TwoPts['KGtw{0}'.format(twist)]][tp-t])/2).mean, yerr=gv.log((data[TwoPts['KGtw{0}'.format(twist)]][t]+data[TwoPts['KGtw{0}'.format(twist)]][tp-t])/2).sdev, fmt='ko')
-
-                plt.errorbar(t, ((data[TwoPts['KGtw{0}'.format(twist)]][t]+data[TwoPts['KGtw{0}'.format(twist)]][tp-t])/2).mean, yerr=((data[TwoPts['KGtw{0}'.format(twist)]][t]+data[TwoPts['KGtw{0}'.format(twist)]][tp-t])/2).sdev, fmt='ko')
+ 
