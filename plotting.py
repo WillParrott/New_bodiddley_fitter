@@ -52,6 +52,8 @@ def create_t_plot(location,filename,y1,y1label,y2=None,y2label=None,y3=None,y3la
     handles = [h[0] for h in handles]
     plt.legend(handles=handles,labels=labels,fontsize=18,frameon=False) 
     #plt.ylabel(r'{0}'.format(ylabel),fontsize=30)
+    plt.axes().xaxis.set_minor_locator(MultipleLocator(1))
+    plt.axes().xaxis.set_major_locator(MultipleLocator(5))
     plt.tight_layout()
     plt.savefig('{0}/{1}'.format(location,filename))
     return()
@@ -125,13 +127,13 @@ def plots(Fit,daughters,parents,currents):
                     tag = Fit['threePtTag{0}'.format(corr)].format(T,Fit['m_s'],mass,Fit['m_l'],twist)
                     filename = '{0}_m{1}_tw{2}_log.pdf'.format(corr,mass,twist)
                     for t in range(T):
-                        ylog[i].append(gv.log(data[tag][i]))
+                        ylog[i].append(gv.log(data[tag][t]))
                     yrat[i] = []
                     tagp = Fit['{0}-Tag'.format(parents[num])].format(mass)
-                    tagd = tag = Fit['{0}-Tag'.format(daughters[num])].format(twist)
-                    print(tagd,corr,tagp)
+                    tagd = Fit['{0}-Tag'.format(daughters[num])].format(twist)
+                    #print(tagd,corr,tagp)
                     for t in range(T):
-                        yrat[i].append(data[tag][i]/(data[tagd][t]*data[tagp][T-t]))
+                        yrat[i].append(data[tag][t]/(data[tagd][t]*data[tagp][T-t]))
                 if len(Fit['Ts']) == 2:
                     create_t_plot(directory,filename,ylog[0],'T={0}'.format(Fit['Ts'][0]),ylog[1],'T={0}'.format(Fit['Ts'][1]))
                 if len(Fit['Ts']) == 3:

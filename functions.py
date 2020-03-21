@@ -196,9 +196,9 @@ def make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents
     else:
         finalmodels = []
         for corr in allcorrs:
-            finalmodels.append(models['0'.format(corr)])
+            finalmodels.extend(models['{0}'.format(corr)])
         svd = SVD_diagnosis(Fit,finalmodels,allcorrs,svdfac)
-        return(finalmodels,svd)                
+        return(tuple(finalmodels),svd)                
     
 
 #######################################################################################################
