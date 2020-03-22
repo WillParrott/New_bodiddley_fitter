@@ -20,7 +20,7 @@ import datetime
 F = collections.OrderedDict()
 F['conf'] = 'F'
 F['filename'] = "KBscalarvectortensor_398cfgs_negFalse"
-F['file_location'] = "../../fine_test/extract/"
+F['file_location'] = "../"
 F['masses'] = ['0.449','0.566','0.683','0.8']
 F['twists'] = ['0','0.4281','1.282','2.141','2.570']
 #F['mtw'] = [[1,1,1,1,0,0],[1,1,1,1,1,0],[1,1,1,1,1,1],[1,1,1,1,1,1]]
@@ -66,7 +66,7 @@ F['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
 SF = collections.OrderedDict()
 SF['conf'] = 'SF'
 SF['filename'] = "nohimem-KBscalarvectortensor_158cfgs_neg['scalar', 'vector']"
-SF['file_location'] = "../../superfine/extract/"
+SF['file_location'] = "../"
 SF['masses'] = ['0.274','0.45','0.6','0.8']
 SF['twists'] = ['0','1.261','2.108','2.946','3.624']
 #SF['mtw'] = [[1,1,1,0,0],[1,1,1,1,0],[1,1,1,1,1],[1,1,1,1,1]]
@@ -113,15 +113,9 @@ SF['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
 
 ################ USER INPUTS ################################
 #############################################################
-<<<<<<< HEAD
 Fit = F                                               # Choose to fit F, SF or UF
 FitMasses = [0,1,2,3]                                 # Choose which masses to fit
 FitTwists = [0,1,2,3,4]                               # Choose which twists to fit
-=======
-Fit = SF                                               # Choose to fit F, SF or UF
-FitMasses = [0]#,1,2,3]                                 # Choose which masses to fit
-FitTwists = [1]#,1,2,3,4]                               # Choose which twists to fit
->>>>>>> 65302ac32795a346b33de26ca5fcb6f55ee35050
 FitTs = [0,1,2]
 FitCorrs = [['BG','BNG'],['KG','KNG'],[['S'],['V'],['T']]]  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
 Chained = True   # If False puts all correlators above in one fit no matter how they are organised
