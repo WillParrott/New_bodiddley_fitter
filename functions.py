@@ -11,6 +11,7 @@ plt.rc("font",**{"size":18})
 import datetime
 import os
 import pickle
+import copy
 #from plotting import *
 #######################################################################################################
 
@@ -68,7 +69,7 @@ def make_data(filename):
 
 #######################################################################################################
 
-def effective_mass_calc(tag,correlator,plot,tp,middle,gap):
+def effective_mass_calc(tag,correlator,tp,middle,gap):
     #finds the effective mass and amplitude of a two point correlator
     M_effs = []
     for t in range(2,tp-2):
@@ -84,13 +85,11 @@ def effective_mass_calc(tag,correlator,plot,tp,middle,gap):
             M_eff += M_effs[i]
             denom += 1
     M_eff = M_eff/denom    
-    if plot:
-        create_single_plot(tag,'Meff',t,M_effs,'$t$','$M_eff$') # fix this
     return(M_eff)
 
 ######################################################################################################
 
-def effective_amplitude_calc(tag,correlator,plot,tp,middle,gap,M_eff):
+def effective_amplitude_calc(tag,correlator,tp,middle,gap,M_eff):
     #finds the effective mass and amplitude of a two point correlator
     A_effs = []
     for t in range(2,tp-2):
@@ -106,8 +105,6 @@ def effective_amplitude_calc(tag,correlator,plot,tp,middle,gap,M_eff):
             A_eff += A_effs[i]
             denom += 1
     A_eff = A_eff/denom    
-    if plot:
-        create_single_plot(tag,'Aeff',t,A_effs,'$t$','$A_eff$')
     return(A_eff)
 
 #######################################################################################################
@@ -234,7 +231,7 @@ def elements_in_FitCorrs(a):
 
 ######################################################################################################
 
-def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,plot,middle,gap,notwist0,non_oscillating):
+def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,middle,gap,notwist0,non_oscillating):
     tp = Fit['tp']
     prior =  gv.BufferDict()
     En = '{0}({1})'.format(0.5*Fit['a'],0.25*Fit['a']*loosener) #Lambda with error of half
@@ -243,8 +240,8 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,plot,midd
         if corr in parents:
             for mass in Fit['masses']:
                 tag = Fit['{0}-Tag'.format(corr)].format(mass)
-                M_eff = effective_mass_calc(tag,data[tag],plot,tp,middle,gap)
-                a_eff = effective_amplitude_calc(tag,data[tag],plot,tp,middle,gap,M_eff)
+                M_eff = effective_mass_calc(tag,data[tag],tp,middle,gap)
+                a_eff = effective_amplitude_calc(tag,data[tag],tp,middle,gap,M_eff)
                 # Parent
                 prior['log({0}:a)'.format(tag)] = gv.log(gv.gvar(N * [an]))
                 prior['log(dE:{0})'.format(tag)] = gv.log(gv.gvar(N * [En]))
@@ -261,8 +258,8 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,plot,midd
                     pass
                 else:
                     tag = Fit['{0}-Tag'.format(corr)].format(twist)
-                    M_eff = effective_mass_calc(tag,data[tag],plot,tp,middle,gap)
-                    a_eff = effective_amplitude_calc(tag,data[tag],plot,tp,middle,gap,M_eff)
+                    M_eff = effective_mass_calc(tag,data[tag],tp,middle,gap)
+                    a_eff = effective_amplitude_calc(tag,data[tag],tp,middle,gap,M_eff)
                     # Daughter
                     prior['log({0}:a)'.format(tag)] = gv.log(gv.gvar(N * [an]))
                     prior['log(dE:{0})'.format(tag)] = gv.log(gv.gvar(N * [En]))
@@ -356,7 +353,7 @@ def get_p0(Fit,fittype,Nexp,allcorrs,prior,FitCorrs):
     return(p0)
 ######################################################################################################
 
-def update_p0(p,finalp,Fit,fittype,Nexp,allcorrs,FitCorrs):
+def update_p0(p,finalp,Fit,fittype,Nexp,allcorrs,FitCorrs,Q):
     # We want to take in several scenarios in this order 
     # 1) This exact fit has been done before, modulo priors, svds t0s etc
     # 2) Same but different type of fit, eg marginalised 
@@ -374,7 +371,7 @@ def update_p0(p,finalp,Fit,fittype,Nexp,allcorrs,FitCorrs):
     gv.dump(finalp,filename2)
 
     #case 3
-    if os.path.isfile(filename3):
+    if os.path.isfile(filename3) and Q > 0.05:
         p0 = gv.load(filename3) #load exisiting global Nexp
         for key in finalp:  # key in this output
             p0[key] =  finalp[key]  #Update exisiting and add new
@@ -383,7 +380,7 @@ def update_p0(p,finalp,Fit,fittype,Nexp,allcorrs,FitCorrs):
     else:
         gv.dump(finalp,filename3)
 
-    if os.path.isfile(filename4):
+    if os.path.isfile(filename4) and Q > 0.05:
         p0 = gv.load(filename4) # load existing, could be any length
         for key in finalp:  # key in new 
             if key in p0: # if 
@@ -423,17 +420,15 @@ def save_fit(fit,Fit,allcorrs,fittype,Nexp,SvdFactor,PriorLoosener,currents):
 
 def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,save,GBF):#if GBF = None doesn't pass GBF, else passed GBF 
     #do chained fit with no marginalisation Nexp = NMax
+    models = copy.deepcopy(modelsA)
     if len(modelsB[0]) !=0: 
-        modelsA.extend(modelsB)
-    models = modelsA
+        models.extend(modelsB)
     print('Models',models)
     fitter = cf.CorrFitter(models=models, fitter='gsl_multifit', alg='subspace2D', solver='cholesky', maxit=5000, fast=False, tol=(1e-6,0.0,0.0))
     p0 = get_p0(Fit,'chained',Nexp,allcorrs,prior,FitCorrs)
-    #print('p0',p0)
     print(30 * '=','Chained-Unmarginalised','Nexp =',Nexp,'Date',datetime.datetime.now())
     fit = fitter.chained_lsqfit(data=data, prior=prior, p0=p0, add_svdnoise=svdnoise, add_priornoise=priornoise)
-    if fit.Q > 0.05: #threshold for a 'good' fit
-        update_p0([f.pmean for f in fit.chained_fits.values()],fit.pmean,Fit,'chained',Nexp,allcorrs,FitCorrs) #fittype=chained, for marg,includeN
+    update_p0([f.pmean for f in fit.chained_fits.values()],fit.pmean,Fit,'chained',Nexp,allcorrs,FitCorrs,fit.Q) #fittype=chained, for marg,includeN
     if GBF == None:
         print(fit)
         print_results(fit.p,prior)
@@ -466,8 +461,7 @@ def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,svdnoise,priornoise,curre
     #print('p0',p0)
     print(30 * '=','Unchained-Unmarginalised','Nexp =',Nexp,'Date',datetime.datetime.now())
     fit = fitter.lsqfit(data=data, prior=prior, p0=p0, svdcut=svdcut, add_svdnoise=svdnoise, add_priornoise=priornoise)
-    if fit.Q > 0.05: #threshold for a 'good' fit
-        update_p0(fit.pmean,fit.pmean,Fit,'unchained',Nexp,allcorrs,allcorrs) #fittype=chained, for marg,includeN
+    update_p0(fit.pmean,fit.pmean,Fit,'unchained',Nexp,allcorrs,allcorrs,fit.Q) #fittype=chained, for marg,includeN
     if GBF == None:
         print(fit)
         print_results(fit.p,prior)
@@ -507,22 +501,31 @@ def print_p_p0(p,p0,prior):
 #####################################################################################################
 
 def print_results(p,prior):
-    print('{0:<30}{1:<20}{2:<20}{3:<20}{4:<20}'.format('key','p','p % error','prior','prior % error'))
-    print(30*'-''Ground state energies')
+    print(100*'-')
+    print('{0:<30}{1:<15}{2:<15}{3:<15}{4}'.format('key','p','p error','prior','prior error'))
+    print(100*'-')
+    print('Ground state energies')
+    print(100*'-')
     for key in prior:
-        if len(np.shape(p[key])) == 1:
-            if key.split(':')[0] =='dE' and key.split(':')[1][0] != 'o':
-                print('{0:<30}{1:<20}{2:<20.3f}{3:<20}{4:<20.2f}'.format(key,p[key][0],100*p[key][0].sdev/p[key][0].mean,prior[key][0],100*prior[key][0].sdev/prior[key][0].mean))
-    print(30*'-','Oscillating ground state energies')
+        if key[0] == 'l':
+            key = key.split('(')[1].split(')')[0]
+        if key.split(':')[0] =='dE' and key.split(':')[1][0] != 'o':
+            print('{0:<30}{1:<15}{2:<15.3%}{3:<15}{4:.2%}'.format(key,p[key][0],p[key][0].sdev/p[key][0].mean,prior[key][0],prior[key][0].sdev/prior[key][0].mean))
+    print('')
+    print('Oscillating ground state energies')
+    print(100*'-')
     for key in prior:
-        if len(np.shape(p[key])) == 1:
-            if key.split(':')[0] =='dE' and key.split(':')[1][0] = 'o':
-                print('{0:<30}{1:<20}{2:<20.3f}{3:<20}{4:<20.2f}'.format(key,p[key][0],100*p[key][0].sdev/p[key][0].mean,prior[key][0],100*prior[key][0].sdev/prior[key][0].mean))
-    print(30*'-','V_nn[0][0]')
+        if key[0] == 'l':
+            key = key.split('(')[1].split(')')[0]
+        if key.split(':')[0] =='dE' and key.split(':')[1][0] == 'o':
+            print('{0:<30}{1:<15}{2:<15.3%}{3:<15}{4:.2%}'.format(key,p[key][0],p[key][0].sdev/p[key][0].mean,prior[key][0],prior[key][0].sdev/prior[key][0].mean))
+    print('')
+    print('V_nn[0][0]')
+    print(100*'-')
     for key in prior:
-        if len(np.shape(p[key])) == 1:
-            if key[2] =='n' and key[3] == 'n':
-                print('{0:<30}{1:<20}{2:<20.3f}{3:<20}{4:<20.2f}'.format(key,p[key][0][0],100*p[key][0][0].sdev/p[key][0][0].mean,prior[key][0][0],100*prior[key][0][0].sdev/prior[key][0][0].mean))
+        if key[2] =='n' and key[3] == 'n':
+            print('{0:<30}{1:<15}{2:<15.3%}{3:<15}{4:.2%}'.format(key,p[key][0][0],p[key][0][0].sdev/p[key][0][0].mean,prior[key][0][0],prior[key][0][0].sdev/prior[key][0][0].mean))
+    print(100*'-')
     return()
 #####################################################################################################
 
