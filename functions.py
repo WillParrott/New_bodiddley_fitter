@@ -436,6 +436,7 @@ def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,curre
         update_p0([f.pmean for f in fit.chained_fits.values()],fit.pmean,Fit,'chained',Nexp,allcorrs,FitCorrs) #fittype=chained, for marg,includeN
     if GBF == None:
         print(fit)
+        print_results(fit.p,prior)
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
             save_fit(fit,Fit,allcorrs,'chained',Nexp,SvdFactor,PriorLoosener,currents)
             #print_fit_results(fit) do this later
@@ -448,6 +449,7 @@ def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,curre
         return(fit.logGBF)
     else:
         print(fit)
+        print_results(fit.p,prior)
         print('log(GBF) went up {0:.2f}'.format(fit.logGBF - GBF))
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
             save_fit(fit,Fit,allcorrs,'chained',Nexp,SvdFactor,PriorLoosener,currents)
@@ -468,6 +470,7 @@ def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,svdnoise,priornoise,curre
         update_p0(fit.pmean,fit.pmean,Fit,'unchained',Nexp,allcorrs,allcorrs) #fittype=chained, for marg,includeN
     if GBF == None:
         print(fit)
+        print_results(fit.p,prior)
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
             save_fit(fit,Fit,allcorrs,'unchained',Nexp,SvdFactor,PriorLoosener,currents)
             #print_fit_results(fit) do this later
@@ -476,11 +479,12 @@ def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,svdnoise,priornoise,curre
         print('log(GBF) went up by less than 1: {0:.2f}'.format(fit.logGBF - GBF))
         return(fit.logGBF)
     elif fit.logGBF - GBF < 0:
-        print('log(GBF) went down {0:.2f}'.format(fit.logGBF - GBF))
+        print('log(GBF) went down: {0:.2f}'.format(fit.logGBF - GBF))
         return(fit.logGBF)
     else:
         print(fit)
-        print('log(GBF) went up {0:.2f}'.format(fit.logGBF - GBF))
+        print_results(fit.p,prior)
+        print('log(GBF) went up more than 1: {0:.2f}'.format(fit.logGBF - GBF))
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
             save_fit(fit,Fit,allcorrs,'unchained',Nexp,SvdFactor,PriorLoosener,currents)
             #print_fit_results(fit) do this later
@@ -501,3 +505,24 @@ def print_p_p0(p,p0,prior):
     return()
 
 #####################################################################################################
+
+def print_results(p,prior):
+    print('{0:<30}{1:<20}{2:<20}{3:<20}{4:<20}'.format('key','p','p % error','prior','prior % error'))
+    print(30*'-''Ground state energies')
+    for key in prior:
+        if len(np.shape(p[key])) == 1:
+            if key.split(':')[0] =='dE' and key.split(':')[1][0] != 'o':
+                print('{0:<30}{1:<20}{2:<20.3f}{3:<20}{4:<20.2f}'.format(key,p[key][0],100*p[key][0].sdev/p[key][0].mean,prior[key][0],100*prior[key][0].sdev/prior[key][0].mean))
+    print(30*'-','Oscillating ground state energies')
+    for key in prior:
+        if len(np.shape(p[key])) == 1:
+            if key.split(':')[0] =='dE' and key.split(':')[1][0] = 'o':
+                print('{0:<30}{1:<20}{2:<20.3f}{3:<20}{4:<20.2f}'.format(key,p[key][0],100*p[key][0].sdev/p[key][0].mean,prior[key][0],100*prior[key][0].sdev/prior[key][0].mean))
+    print(30*'-','V_nn[0][0]')
+    for key in prior:
+        if len(np.shape(p[key])) == 1:
+            if key[2] =='n' and key[3] == 'n':
+                print('{0:<30}{1:<20}{2:<20.3f}{3:<20}{4:<20.2f}'.format(key,p[key][0][0],100*p[key][0][0].sdev/p[key][0][0].mean,prior[key][0][0],100*prior[key][0][0].sdev/prior[key][0][0].mean))
+    return()
+#####################################################################################################
+
