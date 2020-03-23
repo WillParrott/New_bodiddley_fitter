@@ -120,7 +120,7 @@ def SVD_diagnosis(Fit,models,corrs,svdfac):
         pickle_off.close()
     else:
         print('Calculating SVD for {0}'.format(corrs))
-        svd = gv.dataset.svd_diagnosis(cf.read_dataset(Fit['filename']), models=models, nbstrap=20).svdcut
+        svd = gv.dataset.svd_diagnosis(cf.read_dataset('{0}{1}.gpl'.format(Fit['file_location'],Fit['filename'])), models=models, nbstrap=20).svdcut
         pickle_on = open(filename,"wb")
         print('Calculated SVD for {0} : {1:.2g} x {2} = {3:.2g}'.format(corrs,svd,svdfac,svd*svdfac))
         pickle.dump(svd,pickle_on)
