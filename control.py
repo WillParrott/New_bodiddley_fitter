@@ -111,6 +111,55 @@ SF['threePtTagS'] = 'scalar_T{0}_m{1}_m{2}_m{3}_tw{4}'
 SF['threePtTagV'] = 'vector_T{0}_m{1}_m{2}_m{3}_tw{4}'
 SF['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
 
+################ SF PARAMETERS #############################
+UF = collections.OrderedDict()
+UF['conf'] = 'UF'
+UF['filename'] = "run-KBscalarvectortensor_3cfgs_neg.gpl"
+UF['file_location'] = "../utrafine/extract/"
+UF['masses'] = ['0.194','0.45','0.6','0.8']
+UF['twists'] = ['0','0.706','1.529','2.235','4.705']
+#SF['mtw'] = [[1,1,1,0,0],[1,1,1,1,0],[1,1,1,1,1],[1,1,1,1,1]]
+UF['m_l'] = '0.00316'
+UF['m_s'] = '0.0165'
+UF['Ts'] = [33,40]
+UF['tp'] = 192
+UF['L'] = 64
+UF['tmaxesBG'] = [96,96,96,96]
+UF['tmaxesBNG'] = [96,96,96,96]
+UF['tmaxesKG'] = [96,96,96,96,96]
+UF['tmaxesKNG'] = [96,96,96,96,96]
+UF['tminBG'] = 8
+UF['tminBNG'] = 7
+UF['tminKG'] = 9
+UF['tminKNG'] = 9
+#UF['tmaxG'] = 67                             #72 is upper limit, ie includes all data 
+#UF['tmaxNG'] = 71
+#UF['tmaxD'] = 71                             #72 is upper limit, ie goes up to 71
+UF['Stmin'] = 2
+UF['Vtmin'] = 2
+UF['Ttmin'] = 2
+UF['an'] = '0.1(0.10)'
+UF['SVnn0'] = '0.5(5)'                        #Prior for SV_nn[0][0]
+UF['SVn'] = '0.01(25)'                        #Prior for SV_??[n][n]
+UF['SV0'] = '0.01(50)'                          #Prior for SV_no[0][0] etc
+UF['VVnn0'] = '0.5(5)'
+UF['VVn'] = '0.01(25)'
+UF['VV0'] = '0.01(50)'
+UF['TVnn0'] = '0.5(5)'
+UF['TVn'] = '0.01(25)'
+UF['TV0'] = '0.01(50)'
+UF['loosener'] = 0.7                         #Loosener on a_eff
+UF['Mloosener'] = 0.005                        #Loosener on ground state 
+UF['oMloosener'] = 0.03                       #Loosener on oscillating ground state
+UF['a'] = 0.1715/(3.892*0.1973)
+UF['BG-Tag'] = 'B_G5-G5_m{0}'
+UF['BNG-Tag'] = 'B_G5T-G5T_m{0}'
+UF['KG-Tag'] = 'K_G5-G5_tw{0}'
+UF['KNG-Tag'] = 'K_G5-G5X_tw{0}'
+UF['threePtTagS'] = 'scalar_T{0}_m{1}_m{2}_m{3}_tw{4}'
+UF['threePtTagV'] = 'vector_T{0}_m{1}_m{2}_m{3}_tw{4}'
+UF['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
+
 ################ USER INPUTS ################################
 #############################################################
 Fit = F                                               # Choose to fit F, SF or UF
