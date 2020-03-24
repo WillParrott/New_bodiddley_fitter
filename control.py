@@ -20,7 +20,7 @@ import datetime
 F = collections.OrderedDict()
 F['conf'] = 'F'
 F['filename'] = "KBscalarvectortensor_398cfgs_negFalse"
-F['file_location'] = "../../fine_test/extract"
+F['file_location'] = "../../fine_test/extract/"
 F['masses'] = ['0.449','0.566','0.683','0.8']
 F['twists'] = ['0','0.4281','1.282','2.141','2.570']
 #F['mtw'] = [[1,1,1,1,0,0],[1,1,1,1,1,0],[1,1,1,1,1,1],[1,1,1,1,1,1]]
@@ -111,11 +111,11 @@ SF['threePtTagS'] = 'scalar_T{0}_m{1}_m{2}_m{3}_tw{4}'
 SF['threePtTagV'] = 'vector_T{0}_m{1}_m{2}_m{3}_tw{4}'
 SF['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
 
-################ SF PARAMETERS #############################
+################ UF PARAMETERS #############################
 UF = collections.OrderedDict()
 UF['conf'] = 'UF'
-UF['filename'] = "run-KBscalarvectortensor_3cfgs_neg.gpl"
-UF['file_location'] = "../utrafine/extract/"
+UF['filename'] = "run-KBscalarvectortensor_3cfgs_neg"
+UF['file_location'] = "../../ultrafine/extract/"
 UF['masses'] = ['0.194','0.45','0.6','0.8']
 UF['twists'] = ['0','0.706','1.529','2.235','4.705']
 #SF['mtw'] = [[1,1,1,0,0],[1,1,1,1,0],[1,1,1,1,1],[1,1,1,1,1]]
@@ -163,9 +163,9 @@ UF['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
 ################ USER INPUTS ################################
 #############################################################
 
-Fit = SF                                               # Choose to fit F, SF , UF
-FitMasses = [0]#,1,2,3]                                 # Choose which masses to fit
-FitTwists = [1]#0,1,2,3,4]                               # Choose which twists to fit
+Fit = F                                               # Choose to fit F, SF , UF
+FitMasses = [0,1,2,3]                                 # Choose which masses to fit
+FitTwists = [0,1,2,3,4]                               # Choose which twists to fit
 FitTs = [0,1,2]
 FitCorrs = [['BG','BNG'],['KG','KNG'],[['S'],['V'],['T']]]  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
 Chained = True   # If False puts all correlators above in one fit no matter how they are organised
