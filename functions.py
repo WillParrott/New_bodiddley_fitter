@@ -26,6 +26,13 @@ def read_setup(setup):
         currents.append(lab[1])
         parents.append(lab[2])
     return(daughters,currents,parents)
+######################################################################################################
+
+def strip_list(l): #Strips elemenst from list l
+    stripped = ''
+    for element in l:
+        stripped = '{0}{1}'.format(stripped,element)
+    return(stripped)
 
 ######################################################################################################
 
@@ -111,7 +118,7 @@ def effective_amplitude_calc(tag,correlator,tp,middle,gap,M_eff):
 
 def SVD_diagnosis(Fit,models,corrs,svdfac):
     #Feed models and corrs (list of corrs in this SVD cut)
-    filename = 'SVD/{0}{1}{2}{3}{4}'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],corrs)
+    filename = 'SVD/{0}{1}{2}{3}{4}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(corrs))
     #print(filename)
     if os.path.isfile(filename) and os.path.getsize(filename) > 0:
         pickle_off = open(filename,"rb")
@@ -201,7 +208,7 @@ def make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents
 #######################################################################################################
 
 def elements_in_FitCorrs(a):
-    # reads [A,[B,C],[[D,E],F]] and interprets which elements will be chained and how. Returns list of all elements, links in chain and links in parallell chain
+    # reads [A,[B,C],[[D,E],F]] and interprets which elements will be chained and how. Returns alphabetical list of all elements, links in chain and links in parallell chain
     allcorrs = []
     links = collections.OrderedDict()
     parrlinks = collections.OrderedDict()
@@ -227,7 +234,7 @@ def elements_in_FitCorrs(a):
                     for k in range(len(a[i][j])):
                         allcorrs.append(a[i][j][k])
                         parrlinks[j].append(a[i][j][k])
-    return(allcorrs,links,parrlinks)
+    return(sorted(allcorrs),links,parrlinks)
 
 ######################################################################################################
 
@@ -311,10 +318,10 @@ def get_p0(Fit,fittype,Nexp,allcorrs,prior,FitCorrs):
     # 5b) Some elements of the fit have been fitted in other combinations before
 
     
-    filename1 = 'p0/{0}{1}{2}{3}{4}{5}{6}{7}{8}'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],allcorrs,FitCorrs,Fit['Ts'],fittype,Nexp)
-    filename2 = 'p0/{0}{1}{2}{3}{4}{5}{6}'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],allcorrs,Fit['Ts'],Nexp)
-    filename3 = 'p0/{0}{1}{2}{3}{4}{5}{6}{7}{8}'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],allcorrs,FitCorrs,Fit['Ts'],fittype,Nexp+1)
-    filename4 = 'p0/{0}{1}{2}{3}{4}{5}{6}{7}{8}'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],allcorrs,FitCorrs,Fit['Ts'],fittype,Nexp-1)
+    filename1 = 'p0/{0}{1}{2}{3}{4}{5}{6}{7}{8}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(allcorrs),FitCorrs,strip_list(Fit['Ts']),fittype,Nexp)
+    filename2 = 'p0/{0}{1}{2}{3}{4}{5}{6}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(allcorrs),strip_list(Fit['Ts']),Nexp)
+    filename3 = 'p0/{0}{1}{2}{3}{4}{5}{6}{7}{8}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(allcorrs),FitCorrs,strip_list(Fit['Ts']),fittype,Nexp+1)
+    filename4 = 'p0/{0}{1}{2}{3}{4}{5}{6}{7}{8}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(allcorrs),FitCorrs,strip_list(Fit['Ts']),fittype,Nexp-1)
     filename5a = 'p0/{0}{1}{2}'.format(Fit['conf'],Fit['filename'],Nexp)
     filename5b = 'p0/{0}{1}'.format(Fit['conf'],Fit['filename'])
     #case 1
@@ -359,8 +366,8 @@ def update_p0(p,finalp,Fit,fittype,Nexp,allcorrs,FitCorrs,Q):
     # 2) Same but different type of fit, eg marginalised 
     # 3) Global Nexp
     # 4) Global
-    filename1 = 'p0/{0}{1}{2}{3}{4}{5}{6}{7}{8}'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],allcorrs,FitCorrs,Fit['Ts'],fittype,Nexp)
-    filename2 = 'p0/{0}{1}{2}{3}{4}{5}{6}'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],allcorrs,Fit['Ts'],Nexp)
+    filename1 = 'p0/{0}{1}{2}{3}{4}{5}{6}{7}{8}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(allcorrs),FitCorrs,strip_list(Fit['Ts']),fittype,Nexp)
+    filename2 = 'p0/{0}{1}{2}{3}{4}{5}{6}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(allcorrs),strip_list(Fit['Ts']),Nexp)
     filename3 = 'p0/{0}{1}{2}'.format(Fit['conf'],Fit['filename'],Nexp)
     filename4 = 'p0/{0}{1}'.format(Fit['conf'],Fit['filename'])
 
@@ -405,10 +412,10 @@ def update_p0(p,finalp,Fit,fittype,Nexp,allcorrs,FitCorrs,Q):
 ######################################################################################################
 
 def save_fit(fit,Fit,allcorrs,fittype,Nexp,SvdFactor,PriorLoosener,currents):
-    filename = 'Fits/{0}{1}{2}{3}{4}{5}{6}_Nexp{7}_sfac{8}_pfac{9}_Q{10:.2f}_chi{11:.3f}'.format(Fit['conf'],Fit['filename'],Fit['masses'],Fit['twists'],allcorrs,Fit['Ts'],fittype,Nexp,SvdFactor,PriorLoosener,fit.Q,fit.chi2/fit.dof)
+    filename = 'Fits/{0}{1}{2}{3}{4}{5}{6}_Nexp{7}_sfac{8}_pfac{9}_Q{10:.2f}_chi{11:.3f}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(allcorrs),strip_list(Fit['Ts']),fittype,Nexp,SvdFactor,PriorLoosener,fit.Q,fit.chi2/fit.dof)
     for corr in allcorrs:
         if corr in currents:
-            filename += '{0}_tmin{1}'.format(corr,Fit['{0}tmin'.format(corr)])
+            filename += '_{0}tmin{1}'.format(corr,Fit['{0}tmin'.format(corr)])
     #print(filename)        
     gv.dump(fit.p,'{0}.pickle'.format(filename))
     f = open('{0}.txt'.format(filename),'w')
