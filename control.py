@@ -164,19 +164,20 @@ UF['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
 #############################################################
 
 Fit = F                                               # Choose to fit F, SF , UF
-FitMasses = [0,1,2,3]                                 # Choose which masses to fit
-FitTwists = [0,1,2,3,4]                               # Choose which twists to fit
+FitMasses = [0]#,1,2,3]                                 # Choose which masses to fit
+FitTwists = [1]#,1,2,3,4]                               # Choose which twists to fit
 FitTs = [0,1,2]
-FitCorrs = [['BG','BNG'],['KG','KNG'],[['S'],['V'],['T']]]  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
-Chained = True   # If False puts all correlators above in one fit no matter how they are organised
+FitCorrs = [['BG','BNG'],['KG'],[['S'],['V']]]  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
+Chained = False   # If False puts all correlators above in one fit no matter how they are organised
 Marginalised = False #True
 SaveFit = True
+smallsave = True #saves only the ground state non-oscillating and 3pts
 svdnoise = False
 priornoise = False
 ResultPlots = False         # Tell what to plot against, "Q", "N","Log(GBF)", False
 SvdFactor = 1.0                       # Multiplies saved SVD
 PriorLoosener = 1.0                   # Multiplies all prior error by loosener
-Nmax = 4                               # Number of exp to fit for 2pts in chained, marginalised fit
+Nmax = 6                               # Number of exp to fit for 2pts in chained, marginalised fit
 FitToGBF = True                     # If false fits to Nmax
 ##############################################################
 setup = ['KG-S-BG','KG-V-BNG','KNG-T-BNG']
@@ -211,13 +212,13 @@ def main():
             while GBF2-GBF1 > 1:
                 GBF1 = GBF2
                 prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,middle,gap,notwist0,non_oscillating)
-                GBF2 = do_chained_fit(data,prior,N,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,GBF1)
+                GBF2 = do_chained_fit(data,prior,N,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,smallsave,GBF1)
                 N += 1
             
         else:
             for N in range(2,Nmax+1):
                 prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,middle,gap,notwist0,non_oscillating)
-                do_chained_fit(data,prior,N,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,None)
+                do_chained_fit(data,prior,N,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,smallsave,None)
 ######################### Do unchained fit ############################################################
     else:
         if FitToGBF:
@@ -227,13 +228,13 @@ def main():
             while GBF2-GBF1 > 1:
                 GBF1 = GBF2
                 prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,middle,gap,notwist0,non_oscillating)
-                GBF2 = do_unchained_fit(data,prior,N,models,svdcut,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,SaveFit,GBF1)
+                GBF2 = do_unchained_fit(data,prior,N,models,svdcut,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,SaveFit,smallsave,GBF1)
                 N += 1
             
         else:
             for N in range(2,Nmax+1):
                 prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,middle,gap,notwist0,non_oscillating)
-                do_unchained_fit(data,prior,N,models,svdcut,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,SaveFit,None)        
+                do_unchained_fit(data,prior,N,models,svdcut,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,SaveFit,smallsave,None)        
 
 
 #####################################################################################################

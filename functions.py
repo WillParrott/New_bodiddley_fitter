@@ -411,21 +411,35 @@ def update_p0(p,finalp,Fit,fittype,Nexp,allcorrs,FitCorrs,Q):
 
 ######################################################################################################
 
-def save_fit(fit,Fit,allcorrs,fittype,Nexp,SvdFactor,PriorLoosener,currents):
+def save_fit(fit,Fit,allcorrs,fittype,Nexp,SvdFactor,PriorLoosener,currents,smallsave):
     filename = 'Fits/{0}{1}{2}{3}{4}{5}{6}_Nexp{7}_sfac{8}_pfac{9}_Q{10:.2f}_chi{11:.3f}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(allcorrs),strip_list(Fit['Ts']),fittype,Nexp,SvdFactor,PriorLoosener,fit.Q,fit.chi2/fit.dof)
     for corr in allcorrs:
         if corr in currents:
             filename += '_{0}tmin{1}'.format(corr,Fit['{0}tmin'.format(corr)])
-    #print(filename)        
-    gv.dump(fit.p,'{0}.pickle'.format(filename))
+    savedict = gv.BufferDict()
+    if smallsave:
+        for key in fit.p:
+            if key[0] == 'l':
+                key2 = key.split('(')[1].split(')')[0]
+            if key2.split(':')[0] =='dE' and key2.split(':')[1][0] != 'o':
+                savedict[key] = [fit.p[key][0]]
+        for key in fit.p:
+            if key[2] =='n' and key[3] == 'n':
+                savedict[key] = [[fit.p[key][0][0]]]
+    elif smallsave == False:
+        savedict = fit.p
+    print('Started gv.dump fit',datetime.datetime.now())        
+    gv.dump(savedict,'{0}.pickle'.format(filename))
+    print('Finished gv.dump fit, starting save fit output',datetime.datetime.now())
     f = open('{0}.txt'.format(filename),'w')
     f.write(fit.format(pstyle='v'))
-    f.close
+    f.close()
+    print('Finished save fit output',datetime.datetime.now())
     return()
 
 ######################################################################################################
 
-def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,save,GBF):#if GBF = None doesn't pass GBF, else passed GBF 
+def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,save,smallsave,GBF):#if GBF = None doesn't pass GBF, else passed GBF 
     #do chained fit with no marginalisation Nexp = NMax
     models = copy.deepcopy(modelsA)
     if len(modelsB[0]) !=0: 
@@ -454,13 +468,13 @@ def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,curre
         print_results(fit.p,prior)
         print('log(GBF) went up {0:.2f}'.format(fit.logGBF - GBF))
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
-            save_fit(fit,Fit,allcorrs,'chained',Nexp,SvdFactor,PriorLoosener,currents)
+            save_fit(fit,Fit,allcorrs,'chained',Nexp,SvdFactor,PriorLoosener,currents,smallsave)
             #print_fit_results(fit) do this later
         return(fit.logGBF)
 
 ######################################################################################################
 
-def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,save,GBF):#if GBF = None doesn't pass GBF, else passed GBF 
+def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,save,smallsave,GBF):#if GBF = None doesn't pass GBF, else passed GBF 
     #do chained fit with no marginalisation Nexp = NMax
     print('Models',models)
     fitter = cf.CorrFitter(models=models, fitter='gsl_multifit', alg='subspace2D', solver='cholesky', maxit=5000, fast=False, tol=(1e-6,0.0,0.0))
@@ -487,7 +501,7 @@ def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,svdnoise,priornoise,curre
         print_results(fit.p,prior)
         print('log(GBF) went up more than 1: {0:.2f}'.format(fit.logGBF - GBF))
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
-            save_fit(fit,Fit,allcorrs,'unchained',Nexp,SvdFactor,PriorLoosener,currents)
+            save_fit(fit,Fit,allcorrs,'unchained',Nexp,SvdFactor,PriorLoosener,currents,smallsave)
             #print_fit_results(fit) do this later
         return(fit.logGBF)
 
