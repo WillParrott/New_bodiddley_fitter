@@ -463,7 +463,7 @@ def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,curre
         print(fit)
         print_results(fit.p,prior)
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
-            save_fit(fit,Fit,allcorrs,'chained',Nexp,SvdFactor,PriorLoosener,currents)
+            save_fit(fit,Fit,allcorrs,'chained',Nexp,SvdFactor,PriorLoosener,currents,smallsave)
             #print_fit_results(fit) do this later
         return()
     elif fit.logGBF - GBF < 1 and fit.logGBF - GBF > 0:
@@ -496,7 +496,7 @@ def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,svdnoise,priornoise,curre
         print(fit)
         print_results(fit.p,prior)
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
-            save_fit(fit,Fit,allcorrs,'unchained',Nexp,SvdFactor,PriorLoosener,currents)
+            save_fit(fit,Fit,allcorrs,'unchained',Nexp,SvdFactor,PriorLoosener,currents,smallsave)
             #print_fit_results(fit) do this later
         return()
     elif fit.logGBF - GBF < 1 and fit.logGBF - GBF > 0:

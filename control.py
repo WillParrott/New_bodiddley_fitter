@@ -163,7 +163,7 @@ UF['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
 ################ USER INPUTS ################################
 #############################################################
 
-Fit = SF                                               # Choose to fit F, SF , UF
+Fit = F                                               # Choose to fit F, SF , UF
 FitMasses = [0,1,2,3]                                 # Choose which masses to fit
 FitTwists = [0,1,2,3,4]                               # Choose which twists to fit
 FitTs = [0,1,2]
