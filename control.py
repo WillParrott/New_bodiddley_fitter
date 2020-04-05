@@ -77,19 +77,19 @@ SF['tp'] = 144
 SF['L'] = 48
 SF['tmaxesBG'] = [72,72,72,72]
 SF['tmaxesBNG'] = [72,72,72,72]
-SF['tmaxesKG'] = [72,72,72,72,72]
-SF['tmaxesKNG'] = [72,72,72,72,72]
-SF['tminBG'] = 8
-SF['tminBNG'] = 7
-SF['tminKG'] = 9
-SF['tminKNG'] = 9
+SF['tmaxesKG'] = [65,65,50,40,30]
+SF['tmaxesKNG'] = [65,65,50,40,30]
+SF['tminBG'] = 6
+SF['tminBNG'] = 6
+SF['tminKG'] = 4
+SF['tminKNG'] = 4
 #SF['tmaxG'] = 67                             #72 is upper limit, ie includes all data 
 #SF['tmaxNG'] = 71
 #SF['tmaxD'] = 71                             #72 is upper limit, ie goes up to 71
 SF['Stmin'] = 2
 SF['Vtmin'] = 2
 SF['Ttmin'] = 2
-SF['an'] = '0.1(0.10)'
+SF['an'] = '0.1(0.020)'
 SF['SVnn0'] = '0.5(5)'                        #Prior for SV_nn[0][0]
 SF['SVn'] = '0.01(25)'                        #Prior for SV_??[n][n]
 SF['SV0'] = '0.01(50)'                          #Prior for SV_no[0][0] etc
@@ -99,9 +99,9 @@ SF['VV0'] = '0.01(50)'
 SF['TVnn0'] = '0.5(5)'
 SF['TVn'] = '0.01(25)'
 SF['TV0'] = '0.01(50)'
-SF['loosener'] = 0.7                         #Loosener on a_eff
-SF['Mloosener'] = 0.005                        #Loosener on ground state 
-SF['oMloosener'] = 0.03                       #Loosener on oscillating ground state
+SF['loosener'] = 0.5                         #Loosener on a_eff
+SF['Mloosener'] = 0.05                        #Loosener on ground state 
+SF['oMloosener'] = 0.10                       #Loosener on oscillating ground state
 SF['a'] = 0.1715/(2.896*0.1973)
 SF['BG-Tag'] = 'B_G5-G5_m{0}'
 SF['BNG-Tag'] = 'B_G5T-G5T_m{0}'
@@ -163,12 +163,12 @@ UF['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
 ################ USER INPUTS ################################
 #############################################################
 
-Fit = F                                               # Choose to fit F, SF , UF
-FitMasses = [0]#,1,2,3]                                 # Choose which masses to fit
-FitTwists = [1]#,1,2,3,4]                               # Choose which twists to fit
+Fit = SF                                               # Choose to fit F, SF , UF
+FitMasses = [0,1,2,3]                                 # Choose which masses to fit
+FitTwists = [0,1,2,3,4]                               # Choose which twists to fit
 FitTs = [0,1,2]
-FitCorrs = [['BG','BNG'],['KG'],[['S'],['V']]]  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
-Chained = False   # If False puts all correlators above in one fit no matter how they are organised
+FitCorrs = [['BG','BNG'],['KG','KNG'],[['S'],['V'],['T']]]  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
+Chained = True   # If False puts all correlators above in one fit no matter how they are organised
 Marginalised = False #True
 SaveFit = True
 smallsave = True #saves only the ground state non-oscillating and 3pts
@@ -177,8 +177,9 @@ priornoise = False
 ResultPlots = False         # Tell what to plot against, "Q", "N","Log(GBF)", False
 SvdFactor = 1.0                       # Multiplies saved SVD
 PriorLoosener = 1.0                   # Multiplies all prior error by loosener
-Nmax = 6                               # Number of exp to fit for 2pts in chained, marginalised fit
-FitToGBF = True                     # If false fits to Nmax
+Nmax = 4                               # Number of exp to fit for 2pts in chained, marginalised fit
+Nmin = 3                              #Number to start on
+FitToGBF = False                     # If false fits to Nmax
 ##############################################################
 setup = ['KG-S-BG','KG-V-BNG','KNG-T-BNG']
 notwist0 = ['KNG','T'] #list any fits which do not use tw-0
@@ -206,7 +207,7 @@ def main():
 ############################ Do chained fit #########################################################
     if Chained:
         if FitToGBF:
-            N = 2
+            N = Nmin
             GBF1 = -1e10
             GBF2 = GBF1 + 10
             while GBF2-GBF1 > 1:
@@ -216,13 +217,13 @@ def main():
                 N += 1
             
         else:
-            for N in range(2,Nmax+1):
+            for N in range(Nmin,Nmax+1):
                 prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,middle,gap,notwist0,non_oscillating)
                 do_chained_fit(data,prior,N,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,smallsave,None)
 ######################### Do unchained fit ############################################################
     else:
         if FitToGBF:
-            N = 2
+            N = Nmin
             GBF1 = -1e10
             GBF2 = GBF1 + 10
             while GBF2-GBF1 > 1:
@@ -232,7 +233,7 @@ def main():
                 N += 1
             
         else:
-            for N in range(2,Nmax+1):
+            for N in range(Nmin,Nmax+1):
                 prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,middle,gap,notwist0,non_oscillating)
                 do_unchained_fit(data,prior,N,models,svdcut,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,SaveFit,smallsave,None)        
 

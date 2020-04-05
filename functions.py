@@ -119,6 +119,14 @@ def effective_amplitude_calc(tag,correlator,tp,middle,gap,M_eff):
 def SVD_diagnosis(Fit,models,corrs,svdfac):
     #Feed models and corrs (list of corrs in this SVD cut)
     filename = 'SVD/{0}{1}{2}{3}{4}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(corrs))
+    for corr in corrs:
+       if 'tmin{0}'.format(corr) in Fit:
+           filename += '{0}'.format(Fit['tmin{0}'.format(corr)])
+           for element in Fit['tmaxes{0}'.format(corr)]:
+               filename += '{0}'.format(element)
+       if '{0}tmin'.format(corr) in Fit:
+           filename += '{0}'.format(Fit['{0}tmin'.format(corr)])
+ 
     #print(filename)
     if os.path.isfile(filename) and os.path.getsize(filename) > 0:
         pickle_off = open(filename,"rb")
@@ -264,8 +272,9 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,middle,ga
                 if twist =='0' and corr in notwist0:
                     pass
                 else:
+                    tag = Fit['{0}-Tag'.format(corr)].format('0')
+                    M_eff = np.sqrt(effective_mass_calc(tag,data[tag],tp,middle,gap)**2 + (np.sqrt(3)*np.pi*float(twist)/Fit['L'])**2)   #from dispersion relation
                     tag = Fit['{0}-Tag'.format(corr)].format(twist)
-                    M_eff = effective_mass_calc(tag,data[tag],tp,middle,gap)
                     a_eff = effective_amplitude_calc(tag,data[tag],tp,middle,gap,M_eff)
                     # Daughter
                     prior['log({0}:a)'.format(tag)] = gv.log(gv.gvar(N * [an]))
@@ -412,7 +421,7 @@ def update_p0(p,finalp,Fit,fittype,Nexp,allcorrs,FitCorrs,Q):
 ######################################################################################################
 
 def save_fit(fit,Fit,allcorrs,fittype,Nexp,SvdFactor,PriorLoosener,currents,smallsave):
-    filename = 'Fits/{0}{1}{2}{3}{4}{5}{6}_Nexp{7}_sfac{8}_pfac{9}_Q{10:.2f}_chi{11:.3f}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(allcorrs),strip_list(Fit['Ts']),fittype,Nexp,SvdFactor,PriorLoosener,fit.Q,fit.chi2/fit.dof)
+    filename = 'Fits/{0}{1}{2}{3}{4}{5}{6}_Nexp{7}_sfac{8}_pfac{9}_Q{10:.2f}_chi{11:.3f}_sm{12}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(allcorrs),strip_list(Fit['Ts']),fittype,Nexp,SvdFactor,PriorLoosener,fit.Q,fit.chi2/fit.dof,smallsave)
     for corr in allcorrs:
         if corr in currents:
             filename += '_{0}tmin{1}'.format(corr,Fit['{0}tmin'.format(corr)])
@@ -428,9 +437,9 @@ def save_fit(fit,Fit,allcorrs,fittype,Nexp,SvdFactor,PriorLoosener,currents,smal
                 savedict[key] = [[fit.p[key][0][0]]]
     elif smallsave == False:
         savedict = fit.p
-    print('Started gv.dump fit',datetime.datetime.now())        
-    gv.dump(savedict,'{0}.pickle'.format(filename))
-    print('Finished gv.dump fit, starting save fit output',datetime.datetime.now())
+    print('Started gv.gdump fit, smallsave = {0}'.format(smallsave),datetime.datetime.now())        
+    gv.gdump(savedict,'{0}.pickle'.format(filename))
+    print('Finished gv.gdump fit, starting save fit output',datetime.datetime.now())
     f = open('{0}.txt'.format(filename),'w')
     f.write(fit.format(pstyle='v'))
     f.close()
