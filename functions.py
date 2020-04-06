@@ -96,7 +96,7 @@ def effective_mass_calc(tag,correlator,tp,middle,gap):
 
 ######################################################################################################
 
-def effective_amplitude_calc(tag,correlator,tp,middle,gap,M_eff):
+def effective_amplitude_calc(tag,correlator,tp,middle,gap,M_eff,Fit):
     #finds the effective mass and amplitude of a two point correlator
     A_effs = []
     for t in range(2,tp-2):
@@ -111,7 +111,10 @@ def effective_amplitude_calc(tag,correlator,tp,middle,gap,M_eff):
         if A_effs[i] != 0:
             A_eff += A_effs[i]
             denom += 1
-    A_eff = A_eff/denom    
+    A_eff = A_eff/denom
+    if A_eff < 0.02 or A_eff > 0.5:
+        print('Replaced A_eff for {0} {1} -> {2}'.format(tag,A_eff,Fit['an']))
+        A_eff = gv.gvar(Fit['an'])
     return(A_eff)
 
 #######################################################################################################
@@ -247,6 +250,7 @@ def elements_in_FitCorrs(a):
 ######################################################################################################
 
 def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,middle,gap,notwist0,non_oscillating):
+    ex1 = 0.5 #multiples error on first exited state relative to other excited states 
     tp = Fit['tp']
     prior =  gv.BufferDict()
     En = '{0}({1})'.format(0.5*Fit['a'],0.25*Fit['a']*loosener) #Lambda with error of half
@@ -256,7 +260,7 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,middle,ga
             for mass in Fit['masses']:
                 tag = Fit['{0}-Tag'.format(corr)].format(mass)
                 M_eff = effective_mass_calc(tag,data[tag],tp,middle,gap)
-                a_eff = effective_amplitude_calc(tag,data[tag],tp,middle,gap,M_eff)
+                a_eff = effective_amplitude_calc(tag,data[tag],tp,middle,gap,M_eff,Fit)
                 # Parent
                 prior['log({0}:a)'.format(tag)] = gv.log(gv.gvar(N * [an]))
                 prior['log(dE:{0})'.format(tag)] = gv.log(gv.gvar(N * [En]))
@@ -265,7 +269,9 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,middle,ga
                 # Parent -- oscillating part
                 prior['log(o{0}:a)'.format(tag)] = gv.log(gv.gvar(N * [an]))
                 prior['log(dE:o{0})'.format(tag)] = gv.log(gv.gvar(N * [En]))
-                prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.gvar(M_eff.mean+gv.gvar(En).mean,loosener*Fit['oMloosener']*(M_eff.mean+gv.gvar(En).mean)))
+                prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.gvar((M_eff+gv.gvar(En)/2).mean,loosener*Fit['oMloosener']*((M_eff+gv.gvar(En)/2).mean)))
+                prior['log(o{0}:a)'.format(tag)][0] = gv.log(gv.gvar(gv.gvar(an).mean,loosener*Fit['oloosener']*gv.gvar(an).mean))
+                #prior['log(o{0}:a)'.format(tag)][1] = gv.log(gv.gvar(gv.gvar(an).mean,loosener*Fit['oloosener']*2*gv.gvar(an).mean))
                 
         if corr in daughters:
             for twist in Fit['twists']:
@@ -275,7 +281,7 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,middle,ga
                     tag = Fit['{0}-Tag'.format(corr)].format('0')
                     M_eff = np.sqrt(effective_mass_calc(tag,data[tag],tp,middle,gap)**2 + (np.sqrt(3)*np.pi*float(twist)/Fit['L'])**2)   #from dispersion relation
                     tag = Fit['{0}-Tag'.format(corr)].format(twist)
-                    a_eff = effective_amplitude_calc(tag,data[tag],tp,middle,gap,M_eff)
+                    a_eff = effective_amplitude_calc(tag,data[tag],tp,middle,gap,M_eff,Fit)
                     # Daughter
                     prior['log({0}:a)'.format(tag)] = gv.log(gv.gvar(N * [an]))
                     prior['log(dE:{0})'.format(tag)] = gv.log(gv.gvar(N * [En]))
@@ -287,7 +293,9 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,middle,ga
                     else:
                         prior['log(o{0}:a)'.format(tag)] = gv.log(gv.gvar(N * [an]))
                         prior['log(dE:o{0})'.format(tag)] = gv.log(gv.gvar(N * [En]))
-                        prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.gvar(M_eff.mean+gv.gvar(En).mean,loosener*Fit['oMloosener']*(M_eff.mean+gv.gvar(En).mean)))
+                        prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.gvar((M_eff+gv.gvar(En)/2).mean,loosener*Fit['oMloosener']*((M_eff+gv.gvar(En)/2).mean)))
+                        prior['log(o{0}:a)'.format(tag)][0] = gv.log(gv.gvar(gv.gvar(an).mean,loosener*Fit['oloosener']*gv.gvar(an).mean))
+                        prior['log(o{0}:a)'.format(tag)][1] = gv.log(gv.gvar(gv.gvar(an).mean,loosener*Fit['oloosener']*2*gv.gvar(an).mean))
         if corr in currents:
             for mass in Fit['masses']:
                 for twist in Fit['twists']:
@@ -461,6 +469,7 @@ def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,curre
     update_p0([f.pmean for f in fit.chained_fits.values()],fit.pmean,Fit,'chained',Nexp,allcorrs,FitCorrs,fit.Q) #fittype=chained, for marg,includeN
     if GBF == None:
         print(fit)
+        print('chi^2/dof = {0:.3f} logGBF = {1:.0f}'.format(fit.chi2/fit.dof,fit.logGBF))
         print_results(fit.p,prior)
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
             save_fit(fit,Fit,allcorrs,'chained',Nexp,SvdFactor,PriorLoosener,currents,smallsave)
@@ -474,6 +483,7 @@ def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,curre
         return(fit.logGBF)
     else:
         print(fit)
+        print('chi^2/dof = {0:.3f} logGBF = {1:.0f}'.format(fit.chi2/fit.dof,fit.logGBF))
         print_results(fit.p,prior)
         print('log(GBF) went up {0:.2f}'.format(fit.logGBF - GBF))
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
@@ -494,6 +504,7 @@ def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,svdnoise,priornoise,curre
     update_p0(fit.pmean,fit.pmean,Fit,'unchained',Nexp,allcorrs,allcorrs,fit.Q) #fittype=chained, for marg,includeN
     if GBF == None:
         print(fit)
+        print('chi^2/dof = {0:.3f} logGBF = {1:.0f}'.format(fit.chi2/fit.dof,fit.logGBF))
         print_results(fit.p,prior)
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
             save_fit(fit,Fit,allcorrs,'unchained',Nexp,SvdFactor,PriorLoosener,currents,smallsave)
@@ -507,6 +518,7 @@ def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,svdnoise,priornoise,curre
         return(fit.logGBF)
     else:
         print(fit)
+        print('chi^2/dof = {0:.3f} logGBF = {1:.0f}'.format(fit.chi2/fit.dof,fit.logGBF))
         print_results(fit.p,prior)
         print('log(GBF) went up more than 1: {0:.2f}'.format(fit.logGBF - GBF))
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
