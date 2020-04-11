@@ -112,7 +112,7 @@ def effective_amplitude_calc(tag,correlator,tp,middle,gap,M_eff,Fit):
             A_eff += A_effs[i]
             denom += 1
     A_eff = A_eff/denom
-    if A_eff < 0.02 or A_eff > 0.5:
+    if A_eff < 0.05 or A_eff > 0.2:
         print('Replaced A_eff for {0} {1} -> {2}'.format(tag,A_eff,Fit['an']))
         A_eff = gv.gvar(Fit['an'])
     return(A_eff)
@@ -156,7 +156,7 @@ def make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents
             models['{0}'.format(corr)] = []
             for i,mass in enumerate(Fit['masses']):
                 tag = Fit['{0}-Tag'.format(corr)].format(mass)
-                models['{0}'.format(corr)].append(cf.Corr2(datatag=tag, tp=tp, tmin=Fit['tmin{0}'.format(corr)], tmax=Fit['tmaxes{0}'.format(corr)][i], a=('{0}:a'.format(tag), 'o{0}:a'.format(tag)), b=('{0}:a'.format(tag), 'o{0}:a'.format(tag)), dE=('dE:{0}'.format(tag), 'dE:o{0}'.format(tag)),s=(1.,-1.)))
+                models['{0}'.format(corr)].append(cf.Corr2(datatag=tag, tp=tp, tmin=Fit['tmin{0}'.format(corr)], tmax=Fit['tmaxes{0}'.format(corr)][i], a=('{0}:a'.format(tag), 'o{0}:a'.format(tag)), b=('{0}:a'.format(tag), 'o{0}:a'.format(tag)), dE=('dE:{0}'.format(tag), 'dE:o{0}'.format(tag)),s=(1,-1)))
 
     for corr in set(daughters):
         if corr in allcorrs:
@@ -168,7 +168,7 @@ def make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents
                 elif twist == '0' and corr in non_oscillating:
                     models['{0}'.format(corr)].append(cf.Corr2(datatag=tag, tp=tp, tmin=Fit['tmin{0}'.format(corr)], tmax=Fit['tmaxes{0}'.format(corr)][i], a=('{0}:a'.format(tag)), b=('{0}:a'.format(tag)), dE=('dE:{0}'.format(tag))))
                 else:
-                    models['{0}'.format(corr)].append(cf.Corr2(datatag=tag, tp=tp, tmin=Fit['tmin{0}'.format(corr)], tmax=Fit['tmaxes{0}'.format(corr)][i], a=('{0}:a'.format(tag), 'o{0}:a'.format(tag)), b=('{0}:a'.format(tag), 'o{0}:a'.format(tag)), dE=('dE:{0}'.format(tag), 'dE:o{0}'.format(tag)),s=(1.,-1.)))
+                    models['{0}'.format(corr)].append(cf.Corr2(datatag=tag, tp=tp, tmin=Fit['tmin{0}'.format(corr)], tmax=Fit['tmaxes{0}'.format(corr)][i], a=('{0}:a'.format(tag), 'o{0}:a'.format(tag)), b=('{0}:a'.format(tag), 'o{0}:a'.format(tag)), dE=('dE:{0}'.format(tag), 'dE:o{0}'.format(tag)),s=(1,-1)))
 
     for i,corr in enumerate(currents):
         if corr in allcorrs:
@@ -255,6 +255,7 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,middle,ga
     prior =  gv.BufferDict()
     En = '{0}({1})'.format(0.5*Fit['a'],0.25*Fit['a']*loosener) #Lambda with error of half
     an = '{0}({1})'.format(gv.gvar(Fit['an']).mean,gv.gvar(Fit['an']).sdev*loosener)
+    aon = '{0}({1})'.format(gv.gvar(Fit['aon']).mean,gv.gvar(Fit['aon']).sdev*loosener)
     for corr in allcorrs:
         if corr in parents:
             for mass in Fit['masses']:
@@ -269,8 +270,8 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,middle,ga
                 # Parent -- oscillating part
                 prior['log(o{0}:a)'.format(tag)] = gv.log(gv.gvar(N * [an]))
                 prior['log(dE:o{0})'.format(tag)] = gv.log(gv.gvar(N * [En]))
-                prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.gvar((M_eff+gv.gvar(En)/2).mean,loosener*Fit['oMloosener']*((M_eff+gv.gvar(En)/2).mean)))
-                prior['log(o{0}:a)'.format(tag)][0] = gv.log(gv.gvar(gv.gvar(an).mean,loosener*Fit['oloosener']*gv.gvar(an).mean))
+                prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.gvar((M_eff+gv.gvar(En)/1).mean,loosener*Fit['oMloosener']*((M_eff+gv.gvar(En)/1).mean)))
+                #prior['log(o{0}:a)'.format(tag)][0] = gv.log(gv.gvar(gv.gvar(an).mean,loosener*Fit['loosener']*gv.gvar(an).mean))
                 #prior['log(o{0}:a)'.format(tag)][1] = gv.log(gv.gvar(gv.gvar(an).mean,loosener*Fit['oloosener']*2*gv.gvar(an).mean))
                 
         if corr in daughters:
@@ -287,15 +288,17 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,middle,ga
                     prior['log(dE:{0})'.format(tag)] = gv.log(gv.gvar(N * [En]))
                     prior['log({0}:a)'.format(tag)][0] = gv.log(gv.gvar(a_eff.mean,loosener*Fit['loosener']*a_eff.mean))
                     prior['log(dE:{0})'.format(tag)][0] = gv.log(gv.gvar(M_eff.mean,loosener*Fit['Mloosener']*M_eff.mean))
+                    #prior['log(dE:{0})'.format(tag)][1] = gv.log(gv.gvar(gv.gvar(En).mean,loosener*Fit['Mloosener']*gv.gvar(En).mean))
                     # Daughter -- oscillating part
                     if twist =='0' and corr in non_oscillating:
                         pass
                     else:
-                        prior['log(o{0}:a)'.format(tag)] = gv.log(gv.gvar(N * [an]))
+                        prior['log(o{0}:a)'.format(tag)] = gv.log(gv.gvar(N * [aon]))
                         prior['log(dE:o{0})'.format(tag)] = gv.log(gv.gvar(N * [En]))
-                        prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.gvar((M_eff+gv.gvar(En)/2).mean,loosener*Fit['oMloosener']*((M_eff+gv.gvar(En)/2).mean)))
-                        prior['log(o{0}:a)'.format(tag)][0] = gv.log(gv.gvar(gv.gvar(an).mean,loosener*Fit['oloosener']*gv.gvar(an).mean))
-                        prior['log(o{0}:a)'.format(tag)][1] = gv.log(gv.gvar(gv.gvar(an).mean,loosener*Fit['oloosener']*2*gv.gvar(an).mean))
+                        prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.gvar((M_eff+gv.gvar(En)/1).mean,loosener*Fit['oMloosener']*((M_eff+gv.gvar(En)/1).mean)))
+                        prior['log(o{0}:a)'.format(tag)][0] = gv.log(gv.gvar(gv.gvar(aon).mean,loosener*Fit['oloosener']*gv.gvar(aon).mean))
+                        #prior['log(o{0}:a)'.format(tag)][1] = gv.log(gv.gvar(gv.gvar(aon).mean,loosener*Fit['oloosener']*gv.gvar(aon).mean))
+                        #prior['log(dE:o{0})'.format(tag)][1] = gv.log(gv.gvar(gv.gvar(En).mean,loosener*Fit['oMloosener']*(gv.gvar(En).mean)))
         if corr in currents:
             for mass in Fit['masses']:
                 for twist in Fit['twists']:
@@ -368,6 +371,9 @@ def get_p0(Fit,fittype,Nexp,allcorrs,prior,FitCorrs):
             pnexp = gv.load(filename5a)
             for key in pnexp:
                 if key in prior:
+                    if key not in p0:
+                        print('Error: {0} in global Nexp but not in global fit'.format(key))
+                        p0[key] = pnexp[key]
                     del p0[key]
                     p0[key] = pnexp[key]
                     print('Loaded {0} p0 from global Nexp'.format(key))
@@ -438,11 +444,10 @@ def save_fit(fit,Fit,allcorrs,fittype,Nexp,SvdFactor,PriorLoosener,currents,smal
         for key in fit.p:
             if key[0] == 'l':
                 key2 = key.split('(')[1].split(')')[0]
-            if key2.split(':')[0] =='dE' and key2.split(':')[1][0] != 'o':
-                savedict[key] = [fit.p[key][0]]
-        for key in fit.p:
-            if key[2] =='n' and key[3] == 'n':
-                savedict[key] = [[fit.p[key][0][0]]]
+                if key2.split(':')[0] =='dE' and key2.split(':')[1][0] != 'o':
+                    savedict[key] = [fit.palt[key][0]]
+            elif key[2] =='n' and key[3] == 'n':
+                savedict[key] = [[fit.palt[key][0][0]]]
     elif smallsave == False:
         savedict = fit.p
     print('Started gv.gdump fit, smallsave = {0}'.format(smallsave),datetime.datetime.now())        
