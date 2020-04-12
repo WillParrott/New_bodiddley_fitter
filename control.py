@@ -173,8 +173,8 @@ FitMasses = [0,1,2,3]                                 # Choose which masses to f
 FitTwists = [0,1,2,3,4]                               # Choose which twists to fit
 FitTs = [0,1,2]
 FitCorrs = [['BG','BNG'],['KG','KNG'],[['S'],['V'],['T']]]  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
-Chained = False   # If False puts all correlators above in one fit no matter how they are organised
-Marginalised = False #True
+Chained = True   # If False puts all correlators above in one fit no matter how they are organised
+Marginalised = 6 # set to eg 6. Two points will be run up to 6 then marginalised to Nmin<N<Nmax
 SaveFit = True
 smallsave = True #saves only the ground state non-oscillating and 3pts
 svdnoise = False
@@ -183,8 +183,8 @@ ResultPlots = False         # Tell what to plot against, "Q", "N","Log(GBF)", Fa
 SvdFactor = 1.0                       # Multiplies saved SVD
 PriorLoosener = 1.0                   # Multiplies all prior error by loosener
 Nmax = 4                               # Number of exp to fit for 2pts in chained, marginalised fit
-Nmin = 4                              #Number to start on
-FitToGBF = False                     # If false fits to Nmax
+Nmin = 1                              #Number to start on
+FitToGBF = True                     # If false fits to Nmax
 ##############################################################
 setup = ['KG-S-BG','KG-V-BNG','KNG-T-BNG']
 notwist0 = ['KNG','T'] #list any fits which do not use tw-0
@@ -210,7 +210,7 @@ def main():
     else: 
         models,svdcut = make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents,SvdFactor,Chained,allcorrs,links,parrlinks)
 ############################ Do chained fit #########################################################
-    if Chained:
+    if Chained and Marginalised == False:
         if FitToGBF:
             N = Nmin
             GBF1 = -1e10
@@ -225,6 +225,22 @@ def main():
             for N in range(Nmin,Nmax+1):
                 prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,middle,gap,notwist0,non_oscillating)
                 do_chained_fit(data,prior,N,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,smallsave,None)
+############################ Do chained marginalised fit ##############################################
+    elif Chained and Marginalised != False:
+        if FitToGBF:    #fits with priorn(Marginalised) and nterm = n,n
+            N = Nmin
+            GBF1 = -1e10
+            GBF2 = GBF1 + 10
+            while GBF2-GBF1 > 1:
+                GBF1 = GBF2
+                prior = make_prior(Fit,Marginalised,allcorrs,currents,daughters,parents,PriorLoosener,data,middle,gap,notwist0,non_oscillating)
+                GBF2 = do_chained_marginalised_fit(data,prior,N,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,smallsave,GBF1,Marginalised)
+                N += 1
+            
+        else:
+            for N in range(Nmin,Nmax+1):
+                prior = make_prior(Fit,Marginalised,allcorrs,currents,daughters,parents,PriorLoosener,data,middle,gap,notwist0,non_oscillating)
+                do_chained_marginalised_fit(data,prior,N,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,smallsave,None,Marginalised)
 ######################### Do unchained fit ############################################################
     else:
         if FitToGBF:
