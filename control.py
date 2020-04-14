@@ -182,7 +182,7 @@ priornoise = False
 ResultPlots = False         # Tell what to plot against, "Q", "N","Log(GBF)", False
 SvdFactor = 1.0                       # Multiplies saved SVD
 PriorLoosener = 1.0                   # Multiplies all prior error by loosener
-Nmax = 4                               # Number of exp to fit for 2pts in chained, marginalised fit
+Nmax = 3                               # Number of exp to fit for 2pts in chained, marginalised fit
 Nmin = 1                              #Number to start on
 FitToGBF = True                     # If false fits to Nmax
 ##############################################################
