@@ -499,7 +499,7 @@ def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,curre
 ######################################################################################################
 
 def do_chained_marginalised_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,save,smallsave,GBF,Marginalised):#if GBF = None doesn't pass GBF, else passed GBF 
-    #do chained fit with no marginalisation Nexp = NMax
+    #do chained fit with marginalisation nterm = nexp,nexp Nmarg=Marginalisation us in p0 bits
     models = copy.deepcopy(modelsA)
     if len(modelsB[0]) !=0:
         models.append(dict(nterm=(Nexp,Nexp))) 
@@ -508,16 +508,16 @@ def do_chained_marginalised_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,pri
         print('Marginalisation not applied as no parrallelised models')
     print('Models',models)
     fitter = cf.CorrFitter(models=models, fitter='gsl_multifit', alg='subspace2D', solver='cholesky', maxit=5000, fast=False, tol=(1e-6,0.0,0.0))
-    p0 = get_p0(Fit,'chained-marginalised_N{0}'.format(Marginalised),Nexp,allcorrs,prior,FitCorrs)
+    p0 = get_p0(Fit,'chained-marginalised_N{0}{0}'.format(Nexp),Marginalised,allcorrs,prior,FitCorrs)
     print(30 * '=','Chained-marginalised','Nexp =',Marginalised,'nterm = ({0},{0})'.format(Nexp),'Date',datetime.datetime.now())
     fit = fitter.chained_lsqfit(data=data, prior=prior, p0=p0, add_svdnoise=svdnoise, add_priornoise=priornoise)
-    update_p0([f.pmean for f in fit.chained_fits.values()],fit.pmean,Fit,'chained-marginalised_N{0}'.format(Marginalised),Nexp,allcorrs,FitCorrs,fit.Q) #fittype=chained, for marg,includeN
+    update_p0([f.pmean for f in fit.chained_fits.values()],fit.pmean,Fit,'chained-marginalised_N{0}{0}'.format(Nexp),Marginalised,allcorrs,FitCorrs,fit.Q) #fittype=chained, for marg,includeN
     if GBF == None:
         print(fit)#.format(pstyle='m'))
         print('chi^2/dof = {0:.3f} logGBF = {1:.0f}'.format(fit.chi2/fit.dof,fit.logGBF))
         print_results(fit.p,prior)
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
-            save_fit(fit,Fit,allcorrs,'chained-marginalised_N{0}'.format(Marginalised),Nexp,SvdFactor,PriorLoosener,currents,smallsave)
+            save_fit(fit,Fit,allcorrs,'chained-marginalised_N{0}{0}'.format(Nexp),Marginalised,SvdFactor,PriorLoosener,currents,smallsave)
             #print_fit_results(fit) do this later
         return()
     elif fit.logGBF - GBF < 1 and fit.logGBF - GBF > 0:
@@ -532,7 +532,7 @@ def do_chained_marginalised_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,pri
         print_results(fit.p,prior)
         print('log(GBF) went up {0:.2f}'.format(fit.logGBF - GBF))
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
-            save_fit(fit,Fit,allcorrs,'chained-marginalised_N{0}'.format(Marginalised),Nexp,SvdFactor,PriorLoosener,currents,smallsave)
+            save_fit(fit,Fit,allcorrs,'chained-marginalised_N{0}{0}'.format(Nexp),Marginalised,SvdFactor,PriorLoosener,currents,smallsave)
             #print_fit_results(fit) do this later
         return(fit.logGBF)
 
