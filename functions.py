@@ -112,9 +112,10 @@ def effective_amplitude_calc(tag,correlator,tp,middle,gap,M_eff,Fit):
             A_eff += A_effs[i]
             denom += 1
     A_eff = A_eff/denom
-    if A_eff < 0.05 or A_eff > 0.2:
-        print('Replaced A_eff for {0} {1} -> {2}'.format(tag,A_eff,Fit['an']))
-        A_eff = gv.gvar(Fit['an'])
+    an = gv.gvar(Fit['an'])
+    if A_eff.mean < (an/3).mean or A_eff.mean > (5*an/3).mean or A_eff.sdev/A_eff.mean > 0.7:
+        print('Replaced A_eff for {0} {1} -> {2}'.format(tag,A_eff,an))
+        A_eff = an
     return(A_eff)
 
 #######################################################################################################
