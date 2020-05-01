@@ -74,7 +74,7 @@ def plots(Fit,daughters,parents,currents):
         y = collections.OrderedDict()
         ylog = collections.OrderedDict()
         lab = []
-        for i,corr in enumerate(set(daughters)):
+        for i,corr in enumerate(sorted(set(daughters))):
             y[i] = []
             lab.append(corr)
             tag = Fit['{0}-Tag'.format(corr)].format(twist)
@@ -97,7 +97,7 @@ def plots(Fit,daughters,parents,currents):
         y = collections.OrderedDict()
         ylog = collections.OrderedDict()
         lab = []
-        for i,corr in enumerate(set(parents)):
+        for i,corr in enumerate(sorted(set(parents))):
             y[i] = []
             lab.append(corr)
             tag = Fit['{0}-Tag'.format(corr)].format(mass)

@@ -120,9 +120,13 @@ def effective_amplitude_calc(tag,correlator,tp,middle,gap,M_eff,Fit):
 
 #######################################################################################################
 
-def SVD_diagnosis(Fit,models,corrs,svdfac):
+def SVD_diagnosis(Fit,models,corrs,svdfac,currents):
     #Feed models and corrs (list of corrs in this SVD cut)
-    filename = 'SVD/{0}{1}{2}{3}{4}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(corrs))
+    if list(set(corrs).intersection(currents)) ==[]:
+        filename = 'SVD/{0}{1}{2}{3}{4}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(corrs))
+    else:
+        filename = 'SVD/{0}{1}{2}{3}{4}{5}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(corrs),strip_list(Fit['Ts']))
+    #print(filename)
     for corr in corrs:
        if 'tmin{0}'.format(corr) in Fit:
            filename += '{0}'.format(Fit['tmin{0}'.format(corr)])
@@ -197,14 +201,14 @@ def make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents
             link = [] #link is models in link
             for corr in links[key]:
                 link.extend(models['{0}'.format(corr)]) 
-            svd = SVD_diagnosis(Fit,link,links[key],svdfac)
+            svd = SVD_diagnosis(Fit,link,links[key],svdfac,currents)
             finalmodelsA.append({'svdcut':svd})
             finalmodelsA.append(tuple(link))
         for key in parrlinks:
             link = [] #link is models in link
             for corr in parrlinks[key]:
                 link.extend(models['{0}'.format(corr)]) 
-            svd = SVD_diagnosis(Fit,link,parrlinks[key],svdfac)
+            svd = SVD_diagnosis(Fit,link,parrlinks[key],svdfac,currents)
             intermediate.append({'svdcut':svd})
             intermediate.append(tuple(link))
         finalmodelsB.append(intermediate)
@@ -213,7 +217,7 @@ def make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents
         finalmodels = []
         for corr in allcorrs:
             finalmodels.extend(models['{0}'.format(corr)])
-        svd = SVD_diagnosis(Fit,finalmodels,allcorrs,svdfac)
+        svd = SVD_diagnosis(Fit,finalmodels,allcorrs,svdfac,currents)
         return(tuple(finalmodels),svd)                
     
 
@@ -384,12 +388,13 @@ def get_p0(Fit,fittype,Nexp,allcorrs,prior,FitCorrs):
     return(p0)
 ######################################################################################################
 
-def update_p0(p,finalp,Fit,fittype,Nexp,allcorrs,FitCorrs,Q):
+def update_p0(p,finalp,Fit,fittype,Nexp,allcorrs,FitCorrs,Q,marg=False):
     # We want to take in several scenarios in this order 
     # 1) This exact fit has been done before, modulo priors, svds t0s etc
     # 2) Same but different type of fit, eg marginalised 
     # 3) Global Nexp
     # 4) Global
+    # 5) if Marg is True, we don't want to save anything but filename 1 as Nexp = nmarg and is not similar to if we do other fits
     filename1 = 'p0/{0}{1}{2}{3}{4}{5}{6}{7}{8}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(allcorrs),FitCorrs,strip_list(Fit['Ts']),fittype,Nexp)
     filename2 = 'p0/{0}{1}{2}{3}{4}{5}{6}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(allcorrs),strip_list(Fit['Ts']),Nexp)
     filename3 = 'p0/{0}{1}{2}'.format(Fit['conf'],Fit['filename'],Nexp)
@@ -397,40 +402,40 @@ def update_p0(p,finalp,Fit,fittype,Nexp,allcorrs,FitCorrs,Q):
 
     #case 1
     gv.dump(p,filename1)
-    
-    #case 2
-    gv.dump(finalp,filename2)
+    if marg == False:
+        #case 2
+        gv.dump(finalp,filename2)
 
-    #case 3
-    if os.path.isfile(filename3) and Q > 0.05:
-        p0 = gv.load(filename3) #load exisiting global Nexp
-        for key in finalp:  # key in this output
-            p0[key] =  finalp[key]  #Update exisiting and add new
-        gv.dump(p0,filename3)
+        #case 3
+        if os.path.isfile(filename3) and Q > 0.05:
+            p0 = gv.load(filename3) #load exisiting global Nexp
+            for key in finalp:  # key in this output
+                p0[key] =  finalp[key]  #Update exisiting and add new
+            gv.dump(p0,filename3)
     
-    else:
-        gv.dump(finalp,filename3)
+        else:
+            gv.dump(finalp,filename3)
 
-    if os.path.isfile(filename4) and Q > 0.05:
-        p0 = gv.load(filename4) # load existing, could be any length
-        for key in finalp:  # key in new 
-            if key in p0: # if 
-                if len(np.shape(p0[key])) == 1 and len(p0[key]) <= Nexp:
-                    #print('shape p0[key]',np.shape(p0[key]),key)
-                    del p0[key]
-                    p0[key] = finalp[key]
-                    print('Updated global p0 {0}'.format(key))
-                elif np.shape(p0[key])[0] <= Nexp:
-                    #print('shape p0[key]',np.shape(p0[key]),key)
-                    del p0[key]
-                    p0[key] = finalp[key]
-                    print('Updated global p0 {0}'.format(key))
-            else:
-                p0[key] =  finalp[key]
-                print('Added new element to global p0 {0}'.format(key))
-        gv.dump(p0,filename4)
-    else:
-        gv.dump(finalp,filename4)
+        if os.path.isfile(filename4) and Q > 0.05:
+            p0 = gv.load(filename4) # load existing, could be any length
+            for key in finalp:  # key in new 
+                if key in p0: # if 
+                    if len(np.shape(p0[key])) == 1 and len(p0[key]) <= Nexp:
+                        #print('shape p0[key]',np.shape(p0[key]),key)
+                        del p0[key]
+                        p0[key] = finalp[key]
+                        print('Updated global p0 {0}'.format(key))
+                    elif np.shape(p0[key])[0] <= Nexp:
+                        #print('shape p0[key]',np.shape(p0[key]),key)
+                        del p0[key]
+                        p0[key] = finalp[key]
+                        print('Updated global p0 {0}'.format(key))
+                else:
+                    p0[key] =  finalp[key]
+                    print('Added new element to global p0 {0}'.format(key))
+            gv.dump(p0,filename4)
+        else:
+            gv.dump(finalp,filename4)
     return()
 
 ######################################################################################################
@@ -477,6 +482,7 @@ def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,curre
         print(fit)
         print('chi^2/dof = {0:.3f} logGBF = {1:.0f}'.format(fit.chi2/fit.dof,fit.logGBF))
         print_results(fit.p,prior)
+        print_Z_V(fit.p,Fit,allcorrs)
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
             save_fit(fit,Fit,allcorrs,'chained',Nexp,SvdFactor,PriorLoosener,currents,smallsave)
             #print_fit_results(fit) do this later
@@ -491,6 +497,7 @@ def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,curre
         print(fit)
         print('chi^2/dof = {0:.3f} logGBF = {1:.0f}'.format(fit.chi2/fit.dof,fit.logGBF))
         print_results(fit.p,prior)
+        print_Z_V(fit.p,Fit,allcorrs)
         print('log(GBF) went up {0:.2f}'.format(fit.logGBF - GBF))
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
             save_fit(fit,Fit,allcorrs,'chained',Nexp,SvdFactor,PriorLoosener,currents,smallsave)
@@ -512,11 +519,12 @@ def do_chained_marginalised_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,pri
     p0 = get_p0(Fit,'chained-marginalised_N{0}{0}'.format(Nexp),Marginalised,allcorrs,prior,FitCorrs)
     print(30 * '=','Chained-marginalised','Nexp =',Marginalised,'nterm = ({0},{0})'.format(Nexp),'Date',datetime.datetime.now())
     fit = fitter.chained_lsqfit(data=data, prior=prior, p0=p0, add_svdnoise=svdnoise, add_priornoise=priornoise)
-    update_p0([f.pmean for f in fit.chained_fits.values()],fit.pmean,Fit,'chained-marginalised_N{0}{0}'.format(Nexp),Marginalised,allcorrs,FitCorrs,fit.Q) #fittype=chained, for marg,includeN
+    update_p0([f.pmean for f in fit.chained_fits.values()],fit.pmean,Fit,'chained-marginalised_N{0}{0}'.format(Nexp),Marginalised,allcorrs,FitCorrs,fit.Q,True) #fittype=chained, for marg,includeN
     if GBF == None:
         print(fit)#.format(pstyle='m'))
         print('chi^2/dof = {0:.3f} logGBF = {1:.0f}'.format(fit.chi2/fit.dof,fit.logGBF))
         print_results(fit.p,prior)
+        print_Z_V(fit.p,Fit,allcorrs)
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
             save_fit(fit,Fit,allcorrs,'chained-marginalised_N{0}{0}'.format(Nexp),Marginalised,SvdFactor,PriorLoosener,currents,smallsave)
             #print_fit_results(fit) do this later
@@ -531,6 +539,7 @@ def do_chained_marginalised_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,pri
         print(fit)#.format(pstyle='m'))
         print('chi^2/dof = {0:.3f} logGBF = {1:.0f}'.format(fit.chi2/fit.dof,fit.logGBF))
         print_results(fit.p,prior)
+        print_Z_V(fit.p,Fit,allcorrs)
         print('log(GBF) went up {0:.2f}'.format(fit.logGBF - GBF))
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
             save_fit(fit,Fit,allcorrs,'chained-marginalised_N{0}{0}'.format(Nexp),Marginalised,SvdFactor,PriorLoosener,currents,smallsave)
@@ -552,6 +561,7 @@ def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,svdnoise,priornoise,curre
         print(fit)
         print('chi^2/dof = {0:.3f} logGBF = {1:.0f}'.format(fit.chi2/fit.dof,fit.logGBF))
         print_results(fit.p,prior)
+        print_Z_V(fit.p,Fit,allcorrs)
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
             save_fit(fit,Fit,allcorrs,'unchained',Nexp,SvdFactor,PriorLoosener,currents,smallsave)
             #print_fit_results(fit) do this later
@@ -566,6 +576,7 @@ def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,svdnoise,priornoise,curre
         print(fit)
         print('chi^2/dof = {0:.3f} logGBF = {1:.0f}'.format(fit.chi2/fit.dof,fit.logGBF))
         print_results(fit.p,prior)
+        print_Z_V(fit.p,Fit,allcorrs)
         print('log(GBF) went up more than 1: {0:.2f}'.format(fit.logGBF - GBF))
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
             save_fit(fit,Fit,allcorrs,'unchained',Nexp,SvdFactor,PriorLoosener,currents,smallsave)
@@ -617,3 +628,24 @@ def print_results(p,prior):
     return()
 #####################################################################################################
 
+def make_Z_V(m_h,m_s,M_parent,M_daughter,S,V):
+    Z_V = (m_h-m_s)/(M_parent-M_daughter) * S/V
+    return(Z_V)
+
+#####################################################################################################
+# needs generalising 
+#####################################################################################################
+def print_Z_V(p,Fit,allcorrs):
+    if 'S' in allcorrs and 'V' in allcorrs:
+        print(100*'-')
+        for mass in Fit['masses']:
+            M_parent = p['dE:{0}'.format(Fit['{0}-Tag'.format('BG')].format(mass))][0]
+            M_daughter = p['dE:{0}'.format(Fit['{0}-Tag'.format('KG')].format('0'))][0]
+            S = p['SVnn_m{0}_tw0'.format(mass)][0][0]
+            V = p['VVnn_m{0}_tw0'.format(mass)][0][0]
+            Z_V = make_Z_V(float(mass),float(Fit['m_s']),M_parent,M_daughter,S,V)
+            print("Mass = {0} Z_V = {1}".format(mass,Z_V))
+        print(100*'-')
+    return()
+
+#####################################################################################################
