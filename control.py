@@ -15,12 +15,12 @@ plt.rc("font",**{"size":18})
 import os.path
 import pickle
 import datetime
-
+##B B* differes about 100MeV kaon by 400MeV Include this in priors#
 ################ F PARAMETERS  #############################
 F = collections.OrderedDict()
 F['conf'] = 'F'
 F['filename'] = "KBscalarvectortensor_398cfgs_negFalse"
-F['file_location'] = "../../fine_test/extract/"
+F['file_location'] = "../../fine5/extract/"
 F['masses'] = ['0.449','0.566','0.683','0.8']
 F['twists'] = ['0','0.4281','1.282','2.141','2.570']
 #F['mtw'] = [[1,1,1,1,0,0],[1,1,1,1,1,0],[1,1,1,1,1,1],[1,1,1,1,1,1]]
@@ -67,7 +67,7 @@ F['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
 ################ SF PARAMETERS #############################
 SF = collections.OrderedDict()
 SF['conf'] = 'SF'
-SF['filename'] = "nohimem-KBscalarvectortensor_317cfgs_negscalarvector"
+SF['filename'] = "nohimem-KBscalarvectortensor_415cfgs_negscalarvector"
 SF['file_location'] = "../../superfine/extract/"
 SF['masses'] = ['0.274','0.45','0.6','0.8']
 SF['twists'] = ['0','1.261','2.108','2.946','3.624']
@@ -79,33 +79,33 @@ SF['tp'] = 144
 SF['L'] = 48
 SF['tmaxesBG'] = [72,72,72,72]
 SF['tmaxesBNG'] = [72,72,72,72]
-SF['tmaxesKG'] = [65,65,59,35,32]
-SF['tmaxesKNG'] = [65,65,57,35,32]
-SF['tminBG'] = 6 #parents fit to nexp 4
-SF['tminBNG'] = 6 #daughters fit to nexp 3
-SF['tminKG'] = 10
-SF['tminKNG'] = 12
+SF['tmaxesKG'] = [72,72,55,35,32]
+SF['tmaxesKNG'] = [72,72,55,35,32]
+SF['tminBG'] = 4 #parents fit to nexp 6
+SF['tminBNG'] = 5 #daughters fit to nexp 6 
+SF['tminKG'] = 5
+SF['tminKNG'] = 5
 #SF['tmaxG'] = 67                             #72 is upper limit, ie includes all data 
 #SF['tmaxNG'] = 71
 #SF['tmaxD'] = 71                             #72 is upper limit, ie goes up to 71
 SF['Stmin'] = 2
 SF['Vtmin'] = 2
 SF['Ttmin'] = 2
-SF['an'] = '0.08(5)'
+SF['an'] = '0.10(05)'
 SF['aon'] = '0.01(2)'
-SF['SVnn0'] = '0.5(5)'                        #Prior for SV_nn[0][0]
-SF['SVn'] = '0.01(25)'                        #Prior for SV_??[n][n]
+SF['SVnn0'] = '1.0(1.0)'                        #Prior for SV_nn[0][0]
+SF['SVn'] = '0.01(50)'                        #Prior for SV_??[n][n]
 SF['SV0'] = '0.01(50)'                          #Prior for SV_no[0][0] etc
-SF['VVnn0'] = '0.5(5)'
-SF['VVn'] = '0.01(25)'
+SF['VVnn0'] = '1.0(1.0)'
+SF['VVn'] = '0.01(50)'
 SF['VV0'] = '0.01(50)'
-SF['TVnn0'] = '0.2(2)'
+SF['TVnn0'] = '0.5(5)'
 SF['TVn'] = '0.01(25)'
-SF['TV0'] = '0.01(50)'
-SF['loosener'] = 0.1                         #Loosener on a_eff
-SF['oloosener'] = 0.1                         #Loosener on osciallting ground state a
+SF['TV0'] = '0.01(25)'
+SF['loosener'] = 0.2                         #Loosener on a_eff
+SF['oloosener'] = 0.5                         #Loosener on osciallting ground state a
 SF['Mloosener'] = 0.05                        #Loosener on ground state 
-SF['oMloosener'] = 0.05                       #Loosener on oscillating ground state
+SF['oMloosener'] = 0.1                       #Loosener on oscillating ground state
 SF['a'] = 0.1715/(2.896*0.1973)
 SF['BG-Tag'] = 'B_G5-G5_m{0}'
 SF['BNG-Tag'] = 'B_G5T-G5T_m{0}'
@@ -169,14 +169,14 @@ UF['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
 ################ USER INPUTS ################################
 #############################################################
 
-Fit = F                                               # Choose to fit F, SF , UF
-FitMasses = [0,1]#,2,3]                                 # Choose which masses to fit
-FitTwists = [0]#,1,2,3]#,4]                               # Choose which twists to fit
+Fit = SF                                               # Choose to fit F, SF , UF
+FitMasses = [0,1,2,3]                                 # Choose which masses to fit
+FitTwists = [0,1,2,3,4]                               # Choose which twists to fit
 FitTs = [0,1,2]
-FitCorrs = [['BG','BNG'],['KG','KNG']]#,[['S'],['V']]]#,['T']]]  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
+FitCorrs = [['BG','BNG'],['KG','KNG'],[['S'],['V'],['T']]]  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
 Chained = False   # If False puts all correlators above in one fit no matter how they are organised
 Marginalised = False # set to eg 6. Two points will be run up to 6 then marginalised to Nmin<N<Nmax
-SaveFit = False
+SaveFit = True
 smallsave = True #saves only the ground state non-oscillating and 3pts
 svdnoise = False
 priornoise = False
@@ -184,7 +184,7 @@ ResultPlots = False         # Tell what to plot against, "Q", "N","Log(GBF)", Fa
 SvdFactor = 1.0                       # Multiplies saved SVD
 PriorLoosener = 1.0                   # Multiplies all prior error by loosener
 Nmax = 3                               # Number of exp to fit for 2pts in chained, marginalised fit
-Nmin = 2                              #Number to start on
+Nmin = 3                              #Number to start on
 FitToGBF = False                     # If false fits to Nmax
 ##############################################################
 setup = ['KG-S-BG','KG-V-BNG','KNG-T-BNG']

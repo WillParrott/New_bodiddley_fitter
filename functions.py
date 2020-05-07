@@ -275,7 +275,7 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,middle,ga
                 # Parent -- oscillating part
                 prior['log(o{0}:a)'.format(tag)] = gv.log(gv.gvar(N * [an]))
                 prior['log(dE:o{0})'.format(tag)] = gv.log(gv.gvar(N * [En]))
-                prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.gvar((M_eff+gv.gvar(En)/1).mean,loosener*Fit['oMloosener']*((M_eff+gv.gvar(En)/1).mean)))
+                prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.gvar((M_eff+gv.gvar(En)/5).mean,loosener*Fit['oMloosener']*((M_eff+gv.gvar(En)/5).mean)))
                 #prior['log(o{0}:a)'.format(tag)][0] = gv.log(gv.gvar(gv.gvar(an).mean,loosener*Fit['loosener']*gv.gvar(an).mean))
                 #prior['log(o{0}:a)'.format(tag)][1] = gv.log(gv.gvar(gv.gvar(an).mean,loosener*Fit['oloosener']*2*gv.gvar(an).mean))
                 
