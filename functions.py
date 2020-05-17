@@ -298,10 +298,13 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,middle,ga
                     if twist =='0' and corr in non_oscillating:
                         pass
                     else:
-                        prior['log(o{0}:a)'.format(tag)] = gv.log(gv.gvar(N * [aon]))
+                        newaon = aon
+                        if twist == '0':
+                            newaon = '{0}({1})'.format(gv.gvar(aon).mean/4,gv.gvar(aon).mean/2) #v small in the case of tw0
+                        prior['log(o{0}:a)'.format(tag)] = gv.log(gv.gvar(N * [newaon]))
                         prior['log(dE:o{0})'.format(tag)] = gv.log(gv.gvar(N * [En]))
                         prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.gvar((M_eff+gv.gvar(En)/1).mean,loosener*Fit['oMloosener']*((M_eff+gv.gvar(En)/1).mean)))
-                        prior['log(o{0}:a)'.format(tag)][0] = gv.log(gv.gvar(gv.gvar(aon).mean,loosener*Fit['oloosener']*gv.gvar(aon).mean))
+                        prior['log(o{0}:a)'.format(tag)][0] = gv.log(gv.gvar(gv.gvar(newaon).mean,loosener*Fit['oloosener']*gv.gvar(newaon).mean))
                         #prior['log(o{0}:a)'.format(tag)][1] = gv.log(gv.gvar(gv.gvar(aon).mean,loosener*Fit['oloosener']*gv.gvar(aon).mean))
                         #prior['log(dE:o{0})'.format(tag)][1] = gv.log(gv.gvar(gv.gvar(En).mean,loosener*Fit['oMloosener']*(gv.gvar(En).mean)))
         if corr in currents:
@@ -476,7 +479,7 @@ def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,curre
     fitter = cf.CorrFitter(models=models, fitter='gsl_multifit', alg='subspace2D', solver='cholesky', maxit=5000, fast=False, tol=(1e-6,0.0,0.0))
     p0 = get_p0(Fit,'chained',Nexp,allcorrs,prior,FitCorrs)
     print(30 * '=','Chained-Unmarginalised','Nexp =',Nexp,'Date',datetime.datetime.now())
-    fit = fitter.chained_lsqfit(data=data, prior=prior, p0=p0, add_svdnoise=svdnoise, add_priornoise=priornoise)
+    fit = fitter.chained_lsqfit(data=data, prior=prior, p0=p0, add_svdnoise=svdnoise, add_priornoise=priornoise,debug=True)
     update_p0([f.pmean for f in fit.chained_fits.values()],fit.pmean,Fit,'chained',Nexp,allcorrs,FitCorrs,fit.Q) #fittype=chained, for marg,includeN
     if GBF == None:
         print(fit)
@@ -518,7 +521,7 @@ def do_chained_marginalised_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,pri
     fitter = cf.CorrFitter(models=models, fitter='gsl_multifit', alg='subspace2D', solver='cholesky', maxit=5000, fast=False, tol=(1e-6,0.0,0.0))
     p0 = get_p0(Fit,'chained-marginalised_N{0}{0}'.format(Nexp),Marginalised,allcorrs,prior,FitCorrs)
     print(30 * '=','Chained-marginalised','Nexp =',Marginalised,'nterm = ({0},{0})'.format(Nexp),'Date',datetime.datetime.now())
-    fit = fitter.chained_lsqfit(data=data, prior=prior, p0=p0, add_svdnoise=svdnoise, add_priornoise=priornoise)
+    fit = fitter.chained_lsqfit(data=data, prior=prior, p0=p0, add_svdnoise=svdnoise, add_priornoise=priornoise,debug=True)
     update_p0([f.pmean for f in fit.chained_fits.values()],fit.pmean,Fit,'chained-marginalised_N{0}{0}'.format(Nexp),Marginalised,allcorrs,FitCorrs,fit.Q,True) #fittype=chained, for marg,includeN
     if GBF == None:
         print(fit)#.format(pstyle='m'))
@@ -555,7 +558,7 @@ def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,svdnoise,priornoise,curre
     p0 = get_p0(Fit,'unchained',Nexp,allcorrs,prior,allcorrs) # FitCorrs = allcorrs 
     #print('p0',p0)
     print(30 * '=','Unchained-Unmarginalised','Nexp =',Nexp,'Date',datetime.datetime.now())
-    fit = fitter.lsqfit(data=data, prior=prior, p0=p0, svdcut=svdcut, add_svdnoise=svdnoise, add_priornoise=priornoise)
+    fit = fitter.lsqfit(data=data, prior=prior, p0=p0, svdcut=svdcut, add_svdnoise=svdnoise, add_priornoise=priornoise,debug=True)
     update_p0(fit.pmean,fit.pmean,Fit,'unchained',Nexp,allcorrs,allcorrs,fit.Q) #fittype=chained, for marg,includeN
     if GBF == None:
         print(fit)
