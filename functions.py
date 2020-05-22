@@ -255,9 +255,15 @@ def elements_in_FitCorrs(a):
 ######################################################################################################
 
 def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,middle,gap,notwist0,non_oscillating):
+    prior =  gv.BufferDict()
+    tw_corr = True
+    if len(daughters) != 0 and '0' in Fit['twists'] and tw_corr:
+        prior['d2'] = gv.gvar('0.00(0.25)')
+        prior['c2'] = gv.gvar('0.00(0.25)')
+        print('Daughter twists correlated')
+    
     ex1 = 0.5 #multiples error on first exited state relative to other excited states 
     tp = Fit['tp']
-    prior =  gv.BufferDict()
     En = '{0}({1})'.format(0.5*Fit['a'],0.25*Fit['a']*loosener) #Lambda with error of half
     an = '{0}({1})'.format(gv.gvar(Fit['an']).mean,gv.gvar(Fit['an']).sdev*loosener)
     aon = '{0}({1})'.format(gv.gvar(Fit['aon']).mean,gv.gvar(Fit['aon']).sdev*loosener)
@@ -284,16 +290,21 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,middle,ga
                 if twist =='0' and corr in notwist0:
                     pass
                 else:
-                    tag = Fit['{0}-Tag'.format(corr)].format('0')
-                    M_eff = np.sqrt(effective_mass_calc(tag,data[tag],tp,middle,gap)**2 + (np.sqrt(3)*np.pi*float(twist)/Fit['L'])**2)   #from dispersion relation
+                    ap2 = 3*(np.pi*float(twist)/Fit['L'])**2
+                    tag0 = Fit['{0}-Tag'.format(corr)].format('0')
+                    M_eff = np.sqrt(effective_mass_calc(tag0,data[tag0],tp,middle,gap)**2 +  ap2)   #from dispersion relation
                     tag = Fit['{0}-Tag'.format(corr)].format(twist)
                     a_eff = effective_amplitude_calc(tag,data[tag],tp,middle,gap,M_eff,Fit)
                     # Daughter
                     prior['log({0}:a)'.format(tag)] = gv.log(gv.gvar(N * [an]))
                     prior['log(dE:{0})'.format(tag)] = gv.log(gv.gvar(N * [En]))
-                    prior['log({0}:a)'.format(tag)][0] = gv.log(gv.gvar(a_eff.mean,loosener*Fit['loosener']*a_eff.mean))
-                    prior['log(dE:{0})'.format(tag)][0] = gv.log(gv.gvar(M_eff.mean,loosener*Fit['Mloosener']*M_eff.mean))
-                    #prior['log(dE:{0})'.format(tag)][1] = gv.log(gv.gvar(gv.gvar(En).mean,loosener*Fit['Mloosener']*gv.gvar(En).mean))
+                    
+                    if twist !='0' and '0' in Fit['twists'] and tw_corr:
+                        prior['log(dE:{0})'.format(tag)][0] = gv.log(gv.sqrt(prior['dE:{0}'.format(tag0)][0]**2 + ap2) * (1 + prior['c2']*ap2/(np.pi)**2) )
+                        prior['log({0}:a)'.format(tag)][0] = gv.log((prior['{0}:a'.format(tag0)][0]/gv.sqrt(1 + ap2/(prior['dE:{0}'.format(tag0)][0])**2)) * (1 + prior['d2']*ap2/(np.pi)**2) )
+                    else: 
+                        prior['log(dE:{0})'.format(tag)][0] = gv.log(gv.gvar(M_eff.mean,loosener*Fit['Mloosener']*M_eff.mean))
+                        prior['log({0}:a)'.format(tag)][0] = gv.log(gv.gvar(a_eff.mean,loosener*Fit['loosener']*a_eff.mean))
                     # Daughter -- oscillating part
                     if twist =='0' and corr in non_oscillating:
                         pass
@@ -305,8 +316,7 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,middle,ga
                         prior['log(dE:o{0})'.format(tag)] = gv.log(gv.gvar(N * [En]))
                         prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.gvar((M_eff+gv.gvar(En)/1).mean,loosener*Fit['oMloosener']*((M_eff+gv.gvar(En)/1).mean)))
                         prior['log(o{0}:a)'.format(tag)][0] = gv.log(gv.gvar(gv.gvar(newaon).mean,loosener*Fit['oloosener']*gv.gvar(newaon).mean))
-                        #prior['log(o{0}:a)'.format(tag)][1] = gv.log(gv.gvar(gv.gvar(aon).mean,loosener*Fit['oloosener']*gv.gvar(aon).mean))
-                        #prior['log(dE:o{0})'.format(tag)][1] = gv.log(gv.gvar(gv.gvar(En).mean,loosener*Fit['oMloosener']*(gv.gvar(En).mean)))
+                        
         if corr in currents:
             for mass in Fit['masses']:
                 for twist in Fit['twists']:
@@ -404,6 +414,14 @@ def update_p0(p,finalp,Fit,fittype,Nexp,allcorrs,FitCorrs,Q,marg=False):
     filename4 = 'p0/{0}{1}'.format(Fit['conf'],Fit['filename'])
 
     #case 1
+    if 'c2' in p and 'd2'in p:
+        del p['c2']
+        del p['d2']
+
+    if 'c2' in finalp and 'd2'in finalp:
+        del finalp['c2']
+        del finalp['d2']
+
     gv.dump(p,filename1)
     if marg == False:
         #case 2
@@ -483,7 +501,7 @@ def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,curre
     update_p0([f.pmean for f in fit.chained_fits.values()],fit.pmean,Fit,'chained',Nexp,allcorrs,FitCorrs,fit.Q) #fittype=chained, for marg,includeN
     if GBF == None:
         print(fit)
-        print('chi^2/dof = {0:.3f} logGBF = {1:.0f}'.format(fit.chi2/fit.dof,fit.logGBF))
+        print('chi^2/dof = {0:.3f} Q = {1:.3f} logGBF = {2:.0f}'.format(fit.chi2/fit.dof,fit.Q,fit.logGBF))
         print_results(fit.p,prior)
         print_Z_V(fit.p,Fit,allcorrs)
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
@@ -498,7 +516,7 @@ def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,curre
         return(fit.logGBF)
     else:
         print(fit)
-        print('chi^2/dof = {0:.3f} logGBF = {1:.0f}'.format(fit.chi2/fit.dof,fit.logGBF))
+        print('chi^2/dof = {0:.3f} Q = {1:.3f} logGBF = {2:.0f}'.format(fit.chi2/fit.dof,fit.Q,fit.logGBF))
         print_results(fit.p,prior)
         print_Z_V(fit.p,Fit,allcorrs)
         print('log(GBF) went up {0:.2f}'.format(fit.logGBF - GBF))
@@ -525,7 +543,7 @@ def do_chained_marginalised_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,pri
     update_p0([f.pmean for f in fit.chained_fits.values()],fit.pmean,Fit,'chained-marginalised_N{0}{0}'.format(Nexp),Marginalised,allcorrs,FitCorrs,fit.Q,True) #fittype=chained, for marg,includeN
     if GBF == None:
         print(fit)#.format(pstyle='m'))
-        print('chi^2/dof = {0:.3f} logGBF = {1:.0f}'.format(fit.chi2/fit.dof,fit.logGBF))
+        print('chi^2/dof = {0:.3f} Q = {1:.3f} logGBF = {2:.0f}'.format(fit.chi2/fit.dof,fit.Q,fit.logGBF))
         print_results(fit.p,prior)
         print_Z_V(fit.p,Fit,allcorrs)
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
@@ -540,7 +558,7 @@ def do_chained_marginalised_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,pri
         return(fit.logGBF)
     else:
         print(fit)#.format(pstyle='m'))
-        print('chi^2/dof = {0:.3f} logGBF = {1:.0f}'.format(fit.chi2/fit.dof,fit.logGBF))
+        print('chi^2/dof = {0:.3f} Q = {1:.3f} logGBF = {2:.0f}'.format(fit.chi2/fit.dof,fit.Q,fit.logGBF))
         print_results(fit.p,prior)
         print_Z_V(fit.p,Fit,allcorrs)
         print('log(GBF) went up {0:.2f}'.format(fit.logGBF - GBF))
@@ -562,7 +580,7 @@ def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,svdnoise,priornoise,curre
     update_p0(fit.pmean,fit.pmean,Fit,'unchained',Nexp,allcorrs,allcorrs,fit.Q) #fittype=chained, for marg,includeN
     if GBF == None:
         print(fit)
-        print('chi^2/dof = {0:.3f} logGBF = {1:.0f}'.format(fit.chi2/fit.dof,fit.logGBF))
+        print('chi^2/dof = {0:.3f} Q = {1:.3f} logGBF = {2:.0f}'.format(fit.chi2/fit.dof,fit.Q,fit.logGBF))
         print_results(fit.p,prior)
         print_Z_V(fit.p,Fit,allcorrs)
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
@@ -577,7 +595,7 @@ def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,svdnoise,priornoise,curre
         return(fit.logGBF)
     else:
         print(fit)
-        print('chi^2/dof = {0:.3f} logGBF = {1:.0f}'.format(fit.chi2/fit.dof,fit.logGBF))
+        print('chi^2/dof = {0:.3f} Q = {1:.3f} logGBF = {2:.0f}'.format(fit.chi2/fit.dof,fit.Q,fit.logGBF))
         print_results(fit.p,prior)
         print_Z_V(fit.p,Fit,allcorrs)
         print('log(GBF) went up more than 1: {0:.2f}'.format(fit.logGBF - GBF))
@@ -625,7 +643,7 @@ def print_results(p,prior):
     print('V_nn[0][0]')
     print(100*'-')
     for key in prior:
-        if key[2] =='n' and key[3] == 'n':
+        if key[1] != '2' and key[2] =='n' and key[3] == 'n':
             print('{0:<30}{1:<15}{2:<15.3%}{3:<15}{4:.2%}'.format(key,p[key][0][0],p[key][0][0].sdev/p[key][0][0].mean,prior[key][0][0],prior[key][0][0].sdev/prior[key][0][0].mean))
     print(100*'-')
     return()
