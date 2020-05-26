@@ -35,22 +35,22 @@ F['tmaxesKG'] = [48,48,48,30,25]            #48 is upper limit, ie goes up to 47
 F['tmaxesKNG'] = [48,48,48,30,25] 
 F['tminBG'] = 4
 F['tminBNG'] = 7
-F['tminKG'] = 2 #parenst to nexp7 daughters to nexp3
+F['tminKG'] = 5 #parenst to nexp7 daughters to nexp3
 F['tminKNG'] = 10                           # 3 for 5 twists, 5 for first 4 
 F['Stmin'] = 2
 F['Vtmin'] = 2
 F['Ttmin'] = 2
-F['an'] = '0.10(20)'
-F['aon'] = '0.05(15)'
-F['SVnn0'] = '1.0(1.0)'                        #prior for SV_nn[0][0]
-F['SVn'] = '0.01(50)'                        #Prior for SV_??[n][n]
-F['SV0'] = '0.5(0.5)'                          #Prior for SV_no[0][0] etc
-F['VVnn0'] = '1.0(1.0)'                         
-F['VVn'] = '0.01(50)'
-F['VV0'] = '0.5(0.5)'
-F['TVnn0'] = '1.0(1.0)'
-F['TVn'] = '0.01(50)'
-F['TV0'] = '0.5(0.5)'
+F['an'] = '0.10(10)'
+F['aon'] = '0.05(10)'
+F['SVnn0'] = '1.5(5)'                        #prior for SV_nn[0][0]
+F['SVn'] = '0.0(5)'                        #Prior for SV_??[n][n]
+F['SV0'] = '0.0(5)'                          #Prior for SV_no[0][0] etc
+F['VVnn0'] = '1.0(5)'                         
+F['VVn'] = '0.0(5)'
+F['VV0'] = '0.0(5)'
+F['TVnn0'] = '0.5(5)'
+F['TVn'] = '0.0(5)'
+F['TV0'] = '0.0(5)'
 F['loosener'] = 0.5                          #Loosener on a_eff 
 F['oloosener'] = 0.5       #Loosener on oscillating ground  state a
 F['Mloosener'] = 0.02                        #Loosener on ground state 
@@ -170,7 +170,7 @@ UF['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
 #############################################################
 
 Fit = F                                               # Choose to fit F, SF , UF
-FitMasses = [0,1,2,3]                                 # Choose which masses to fit
+FitMasses = [0]#,1,2,3]                                 # Choose which masses to fit
 FitTwists = [0,1,2,3,4]                               # Choose which twists to fit
 FitTs = [0,1,2]
 FitCorrs = ['KG']#['BG','BNG'],['KG','KNG'],[['S'],['V'],['T']]]  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
@@ -190,8 +190,8 @@ FitToGBF = False                     # If false fits to Nmax
 setup = ['KG-S-BG','KG-V-BNG','KNG-T-BNG']
 notwist0 = ['KNG','T'] #list any fits which do not use tw-0
 non_oscillating = [] #any daughters which do no osciallate (only tw 0 is affected)
-middle = 3/8                      #middle in Meff Aeff estimate 3/8 normal
-gap = 1/14                        #gap in the Meff Aeff estimate 1/14 works well cannot exceed 1/8
+middle = 4/16                      #middle in Meff Aeff estimate 3/8 normal
+gap = 3/16                        #gap in the Meff Aeff estimate 1/14 works well cannot exceed 1/8
 ##############################################################
 ##############################################################
 
@@ -203,13 +203,14 @@ def main():
     allcorrs,links,parrlinks = elements_in_FitCorrs(FitCorrs)
     # remove masses and twists we don't want to fit
     make_params(Fit,FitMasses,FitTwists,FitTs,daughters,currents,parents)
-    # average data 
-    data = make_data('{0}{1}.gpl'.format(Fit['file_location'],Fit['filename']))
     # make models
     if Chained:
         modelsA,modelsB = make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents,SvdFactor,Chained,allcorrs,links,parrlinks)
+        data = make_data('{0}{1}.gpl'.format(Fit['file_location'],Fit['filename']))
     else: 
         models,svdcut = make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents,SvdFactor,Chained,allcorrs,links,parrlinks)
+        data = make_pdata('{0}{1}.gpl'.format(Fit['file_location'],Fit['filename']),models)#process for speed
+        
 ############################ Do chained fit #########################################################
     if Chained and Marginalised == False:
         if FitToGBF:
