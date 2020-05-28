@@ -90,42 +90,48 @@ def make_pdata(filename,models):
 
 #######################################################################################################
 
-def effective_mass_calc(tag,correlator,tp,middle,gap):
+def effective_mass_calc(tag,correlator,tp):
     #finds the effective mass and amplitude of a two point correlator
-    M_effs = gv.gvar(tp*['0(0)'])
+    M_effs = []
     for t in range(2,len(correlator)-2):
         thing  = (correlator[t-2] + correlator[t+2])/(2*correlator[t]) 
         if thing >= 1:
-            M_effs[t] = gv.arccosh(thing)/2
-    denom = 0
-    M_eff = 0
-    for i in list(range(int(tp*(middle-gap)),int(tp*(middle+gap))))+list(range(int(tp*(1-middle-gap)),int(tp*(1-middle+gap)))):
-        if M_effs[i].mean != 0:
-            M_eff += M_effs[i]
-            denom += 1
-    M_eff = M_eff/denom    
+            M_effs.append(gv.arccosh(thing)/2)
+    #M_effs is all positive masses, we now take a rolling average of 4, and find where this changes the least
+    rav = []
+    for i in range(len(M_effs)-4):
+        rav.append((M_effs[i] + M_effs[i+1] + M_effs[i+2] + M_effs[i+3])/4)
+    M_eff = rav[0]
+    diff = abs((rav[1] - rav[0]).mean)
+    for i in range(1,len(rav)-1):
+        if abs((rav[i+1]-rav[i]).mean) < diff:
+            diff = abs((rav[i+1]-rav[i]).mean)
+            M_eff = (rav[i] + rav[i+1])/2
     return(M_eff)
 
 ######################################################################################################
 
-def effective_amplitude_calc(tag,correlator,tp,middle,gap,M_eff,Fit):
+def effective_amplitude_calc(tag,correlator,tp,M_eff,Fit,corr):
     #finds the effective mass and amplitude of a two point correlator
-    A_effs = gv.gvar(tp*['0(0)'])
-    for t in range(2,len(correlator)-2):
-        numerator = correlator[t]
+    tmin = Fit['tmin{0}'.format(corr)]
+    A_effs = []
+    if len(correlator) == tp:
+        tmin = 0
+    for t in range(tmin,tmin+len(correlator)):
+        numerator = correlator[t-tmin]
         if numerator >= 0:
-            A_effs[t] = gv.sqrt(numerator/(gv.exp(-M_eff*t)+gv.exp(-M_eff*(tp-t))))
-    denom = 0
-    A_eff = 0
-    print(' ')
-    for i in list(range(int(tp*(middle-gap)),int(tp*(middle+gap))))+list(range(int(tp*(1-middle-gap)),int(tp*(1-middle+gap)))):
-        print(A_effs[i])
-        if A_effs[i].mean != 0:
-            A_eff += A_effs[i]
-            denom += 1
-    A_eff = A_eff/denom
+            A_effs.append( gv.sqrt(numerator/(gv.exp(-M_eff*t)+gv.exp(-M_eff*(tp-t)))))
+    rav = []
+    for i in range(len(A_effs)-4):
+        rav.append((A_effs[i] + A_effs[i+1] + A_effs[i+2] + A_effs[i+3])/4)
+    A_eff = rav[0]
+    diff = abs((rav[1] - rav[0]).mean)
+    for i in range(1,len(rav)-1):
+        if abs((rav[i+1]-rav[i]).mean) < diff:
+            diff = abs((rav[i+1]-rav[i]).mean)
+            A_eff = (rav[i] + rav[i+1])/2
     an = gv.gvar(Fit['an'])
-    if A_eff.mean < (an/3).mean or A_eff.mean > (5*an/3).mean or A_eff.sdev/A_eff.mean > 0.7:
+    if A_eff.sdev/A_eff.mean > 0.5:
         print('Replaced A_eff for {0} {1} -> {2}'.format(tag,A_eff,an))
         A_eff = an
     return(A_eff)
@@ -266,17 +272,18 @@ def elements_in_FitCorrs(a):
 
 ######################################################################################################
 
-def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,middle,gap,notwist0,non_oscillating):
+def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,notwist0,non_oscillating):
     prior =  gv.BufferDict()
     tw_corr = True
     otw_corr = True
     if len(daughters) != 0 and '0' in Fit['twists'] and tw_corr:
-        prior['d2'] = gv.gvar('0.0(5)')
-        prior['c2'] = gv.gvar('0.0(5)')
+        for corr in set(daughters).intersection(allcorrs):
+            prior['d2_{0}'.format(corr)] = gv.gvar('0.0(1.0)')
+            prior['c2_{0}'.format(corr)] = gv.gvar('0.0(1.0)')
         print('Daughter twists correlated')
     if len(daughters) != 0 and '0' in Fit['twists'] and otw_corr:
-        #prior['od2'] = gv.gvar('0.0(5)')
-        prior['oc2'] = gv.gvar('0.0(5)')
+        for corr in set(daughters).intersection(allcorrs):
+            prior['oc2_{0}'.format(corr)] = gv.gvar('0.0(1.0)')
         print('Daughter oscillating twists correlated')
     
     ex1 = 0.5 #multiples error on first exited state relative to other excited states 
@@ -288,8 +295,8 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,middle,ga
         if corr in parents:
             for mass in Fit['masses']:
                 tag = Fit['{0}-Tag'.format(corr)].format(mass)
-                M_eff = effective_mass_calc(tag,data[tag],tp,middle,gap)
-                a_eff = effective_amplitude_calc(tag,data[tag],tp,middle,gap,M_eff,Fit)
+                M_eff = effective_mass_calc(tag,data[tag],tp)
+                a_eff = effective_amplitude_calc(tag,data[tag],tp,M_eff,Fit,corr)
                 # Parent
                 prior['log({0}:a)'.format(tag)] = gv.log(gv.gvar(N * [an]))
                 prior['log(dE:{0})'.format(tag)] = gv.log(gv.gvar(N * [En]))
@@ -307,17 +314,19 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,middle,ga
                     pass
                 else:
                     ap2 = 3*(np.pi*float(twist)/Fit['L'])**2
+                    #print(twist,ap2)
                     tag0 = Fit['{0}-Tag'.format(corr)].format('0')
-                    M_eff = np.sqrt(effective_mass_calc(tag0,data[tag0],tp,middle,gap)**2 +  ap2)   #from dispersion relation
+                    M_eff = np.sqrt(effective_mass_calc(tag0,data[tag0],tp)**2 +  ap2)   #from dispersion relation
                     tag = Fit['{0}-Tag'.format(corr)].format(twist)
-                    a_eff = effective_amplitude_calc(tag,data[tag],tp,middle,gap,M_eff,Fit)
+                    a_eff = effective_amplitude_calc(tag,data[tag],tp,M_eff,Fit,corr)
                     # Daughter
                     prior['log({0}:a)'.format(tag)] = gv.log(gv.gvar(N * [an]))
                     prior['log(dE:{0})'.format(tag)] = gv.log(gv.gvar(N * [En]))
-                    
+                    #prior['log(dE:{0})'.format(tag)][1] = gv.log(gv.gvar(gv.gvar(En).mean,0.01*gv.gvar(En).mean))
                     if twist !='0' and '0' in Fit['twists'] and 'log(dE:{0})'.format(tag0) in prior and tw_corr:
-                        prior['log(dE:{0})'.format(tag)][0] = gv.log(gv.sqrt(prior['dE:{0}'.format(tag0)][0]**2 + ap2) * (1 + prior['c2']*ap2/(np.pi)**2) )
-                        prior['log({0}:a)'.format(tag)][0] = gv.log((prior['{0}:a'.format(tag0)][0]/gv.sqrt(1 + ap2/(prior['dE:{0}'.format(tag0)][0])**2)) * (1 + prior['d2']*ap2/(np.pi)**2) )
+                        prior['log(dE:{0})'.format(tag)][0] = gv.log(gv.sqrt(prior['dE:{0}'.format(tag0)][0]**2 + ap2) * (1 + prior['c2_{0}'.format(corr)]*ap2/(np.pi)**2) )
+                        prior['log({0}:a)'.format(tag)][0] = gv.log((prior['{0}:a'.format(tag0)][0]/gv.sqrt(gv.sqrt(1 + ap2/(prior['dE:{0}'.format(tag0)][0])**2))) * (1 + prior['d2_{0}'.format(corr)]*ap2/(np.pi)**2) )
+                        
                     else: 
                         prior['log(dE:{0})'.format(tag)][0] = gv.log(gv.gvar(M_eff.mean,loosener*Fit['Mloosener']*M_eff.mean))
                         prior['log({0}:a)'.format(tag)][0] = gv.log(gv.gvar(a_eff.mean,loosener*Fit['loosener']*a_eff.mean))
@@ -331,7 +340,7 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,middle,ga
                         prior['log(o{0}:a)'.format(tag)] = gv.log(gv.gvar(N * [newaon]))
                         prior['log(dE:o{0})'.format(tag)] = gv.log(gv.gvar(N * [En]))
                         if twist !='0' and '0' in Fit['twists'] and 'log(dE:o{0})'.format(tag0) in prior and otw_corr:
-                            prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.sqrt(prior['dE:o{0}'.format(tag0)][0]**2 + ap2) * (1 + prior['oc2']*ap2/(np.pi)**2) )
+                            prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.sqrt(prior['dE:o{0}'.format(tag0)][0]**2 + ap2) * (1 + prior['oc2_{0}'.format(corr)]*ap2/(np.pi)**2) )
                             #prior['log(o{0}:a)'.format(tag)][0] = gv.log((prior['o{0}:a'.format(tag0)][0]/gv.sqrt(1 + ap2/(prior['dE:o{0}'.format(tag0)][0])**2)) * (1 + prior['od2']*ap2/(np.pi)**2) )
                             prior['log(o{0}:a)'.format(tag)][0] = gv.log(gv.gvar(gv.gvar(newaon).mean,loosener*Fit['oloosener']*gv.gvar(newaon).mean))
                         else:
@@ -436,13 +445,16 @@ def update_p0(p,finalp,Fit,fittype,Nexp,allcorrs,FitCorrs,Q,marg=False):
     filename4 = 'p0/{0}{1}'.format(Fit['conf'],Fit['filename'])
 
     #case 1
-    for element in ['c2','d2','oc2','od2']:
-        if element in p:
-            del p[element]
-        if element in finalp:
-            del finalp[element]
     
-
+    for element in ['c2','d2','oc2']:
+        for corr in allcorrs:
+            if '{0}_{1}'.format(element,corr) in p:
+                del p['{0}_{1}'.format(element,corr)]
+    
+    for element in ['c2','d2','oc2']:
+        for corr in allcorrs:
+            if '{0}_{1}'.format(element,corr) in finalp:
+                del finalp['{0}_{1}'.format(element,corr)]
     gv.dump(p,filename1)
     if marg == False:
         #case 2

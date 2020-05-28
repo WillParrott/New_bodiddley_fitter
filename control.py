@@ -33,15 +33,15 @@ F['tmaxesBG'] = [48,48,48,48]
 F['tmaxesBNG'] = [48,48,48,48]
 F['tmaxesKG'] = [48,48,48,30,25]            #48 is upper limit, ie goes up to 47
 F['tmaxesKNG'] = [48,48,48,30,25] 
-F['tminBG'] = 4
-F['tminBNG'] = 7
-F['tminKG'] = 5 #parenst to nexp7 daughters to nexp3
-F['tminKNG'] = 10                           # 3 for 5 twists, 5 for first 4 
+F['tminBG'] = 3
+F['tminBNG'] = 3
+F['tminKG'] = 4 #parenst to nexp7 daughters to nexp3
+F['tminKNG'] = 3                           # 3 for 5 twists, 5 for first 4 
 F['Stmin'] = 2
 F['Vtmin'] = 2
 F['Ttmin'] = 2
 F['an'] = '0.10(10)'
-F['aon'] = '0.05(10)'
+F['aon'] = '0.05(05)'
 F['SVnn0'] = '1.5(5)'                        #prior for SV_nn[0][0]
 F['SVn'] = '0.0(5)'                        #Prior for SV_??[n][n]
 F['SV0'] = '0.0(5)'                          #Prior for SV_no[0][0] etc
@@ -51,10 +51,10 @@ F['VV0'] = '0.0(5)'
 F['TVnn0'] = '0.5(5)'
 F['TVn'] = '0.0(5)'
 F['TV0'] = '0.0(5)'
-F['loosener'] = 0.5                          #Loosener on a_eff 
-F['oloosener'] = 0.5       #Loosener on oscillating ground  state a
-F['Mloosener'] = 0.02                        #Loosener on ground state 
-F['oMloosener'] = 0.20       #Loosener on oscillating ground state 
+F['loosener'] = 0.05                          #Loosener on a_eff 
+F['oloosener'] = 1.0       #Loosener on oscillating ground  state a
+F['Mloosener'] = 0.05                        #Loosener on ground state 
+F['oMloosener'] = 0.1       #Loosener on oscillating ground state 
 F['a'] = 0.1715/(1.9006*0.1973 )
 F['BG-Tag'] = 'B_G5-G5_m{0}'
 F['BNG-Tag'] = 'B_G5T-G5T_m{0}'
@@ -81,18 +81,18 @@ SF['tmaxesBG'] = [72,72,72,72]
 SF['tmaxesBNG'] = [72,72,72,72]
 SF['tmaxesKG'] = [72,72,55,35,32]
 SF['tmaxesKNG'] = [72,72,55,35,32]
-SF['tminBG'] = 4 #parents fit to nexp 6
-SF['tminBNG'] = 5 #daughters fit to nexp 6 
-SF['tminKG'] = 4
-SF['tminKNG'] = 5
+SF['tminBG'] = 5 #
+SF['tminBNG'] = 2 # 
+SF['tminKG'] = 5
+SF['tminKNG'] = 3
 #SF['tmaxG'] = 67                             #72 is upper limit, ie includes all data 
 #SF['tmaxNG'] = 71
 #SF['tmaxD'] = 71                             #72 is upper limit, ie goes up to 71
 SF['Stmin'] = 2
 SF['Vtmin'] = 2
 SF['Ttmin'] = 2
-SF['an'] = '0.10(05)'
-SF['aon'] = '0.01(2)'
+SF['an'] = '0.05(5)'
+SF['aon'] = '0.02(2)'
 SF['SVnn0'] = '1.0(1.0)'                        #Prior for SV_nn[0][0]
 SF['SVn'] = '0.01(50)'                        #Prior for SV_??[n][n]
 SF['SV0'] = '0.01(50)'                          #Prior for SV_no[0][0] etc
@@ -169,11 +169,11 @@ UF['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
 ################ USER INPUTS ################################
 #############################################################
 
-Fit = F                                               # Choose to fit F, SF , UF
+Fit = SF                                               # Choose to fit F, SF , UF
 FitMasses = [0]#,1,2,3]                                 # Choose which masses to fit
 FitTwists = [0,1,2,3,4]                               # Choose which twists to fit
 FitTs = [0,1,2]
-FitCorrs = ['KG']#['BG','BNG'],['KG','KNG'],[['S'],['V'],['T']]]  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
+FitCorrs = [['BG','BNG'],['KG','KNG'],[['S'],['V'],['T']]]  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
 Chained = False   # If False puts all correlators above in one fit no matter how they are organised
 Marginalised = False # set to eg 6. Two points will be run up to 6 then marginalised to Nmin<N<Nmax
 SaveFit = False
@@ -183,15 +183,14 @@ priornoise = False
 ResultPlots = False         # Tell what to plot against, "Q", "N","Log(GBF)", False
 SvdFactor = 1.0                       # Multiplies saved SVD
 PriorLoosener = 1.0                   # Multiplies all prior error by loosener
-Nmax = 5                               # Number of exp to fit for 2pts in chained, marginalised fit
-Nmin = 5                              #Number to start on
-FitToGBF = False                     # If false fits to Nmax
+Nmax = 4                               # Number of exp to fit for 2pts in chained, marginalised fit
+Nmin = 4                              #Number to start on
+FitToGBF = True                  # If false fits to Nmax
 ##############################################################
 setup = ['KG-S-BG','KG-V-BNG','KNG-T-BNG']
-notwist0 = ['KNG','T'] #list any fits which do not use tw-0
+notwist0 = ['T'] #list any fits which do not use tw-0
 non_oscillating = [] #any daughters which do no osciallate (only tw 0 is affected)
-middle = 4/16                      #middle in Meff Aeff estimate 3/8 normal
-gap = 3/16                        #gap in the Meff Aeff estimate 1/14 works well cannot exceed 1/8
+
 ##############################################################
 ##############################################################
 
@@ -219,13 +218,13 @@ def main():
             GBF2 = GBF1 + 10
             while GBF2-GBF1 > 1:
                 GBF1 = GBF2
-                prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,middle,gap,notwist0,non_oscillating)
+                prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,notwist0,non_oscillating)
                 GBF2 = do_chained_fit(data,prior,N,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,smallsave,GBF1)
                 N += 1
             
         else:
             for N in range(Nmin,Nmax+1):
-                prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,middle,gap,notwist0,non_oscillating)
+                prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,notwist0,non_oscillating)
                 do_chained_fit(data,prior,N,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,smallsave,None)
 ############################ Do chained marginalised fit ##############################################
     elif Chained and Marginalised != False:
@@ -235,13 +234,13 @@ def main():
             GBF2 = GBF1 + 10
             while GBF2-GBF1 > 1:
                 GBF1 = GBF2
-                prior = make_prior(Fit,Marginalised,allcorrs,currents,daughters,parents,PriorLoosener,data,middle,gap,notwist0,non_oscillating)
+                prior = make_prior(Fit,Marginalised,allcorrs,currents,daughters,parents,PriorLoosener,data,notwist0,non_oscillating)
                 GBF2 = do_chained_marginalised_fit(data,prior,N,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,smallsave,GBF1,Marginalised)
                 N += 1
             
         else:
             for N in range(Nmin,Nmax+1):
-                prior = make_prior(Fit,Marginalised,allcorrs,currents,daughters,parents,PriorLoosener,data,middle,gap,notwist0,non_oscillating)
+                prior = make_prior(Fit,Marginalised,allcorrs,currents,daughters,parents,PriorLoosener,data,notwist0,non_oscillating)
                 do_chained_marginalised_fit(data,prior,N,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,smallsave,None,Marginalised)
 ######################### Do unchained fit ############################################################
     else:
@@ -251,13 +250,13 @@ def main():
             GBF2 = GBF1 + 10
             while GBF2-GBF1 > 1:
                 GBF1 = GBF2
-                prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,middle,gap,notwist0,non_oscillating)
+                prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,notwist0,non_oscillating)
                 GBF2 = do_unchained_fit(data,prior,N,models,svdcut,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,SaveFit,smallsave,GBF1)
                 N += 1
             
         else:
             for N in range(Nmin,Nmax+1):
-                prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,middle,gap,notwist0,non_oscillating)
+                prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,notwist0,non_oscillating)
                 do_unchained_fit(data,prior,N,models,svdcut,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,SaveFit,smallsave,None)        
 
 
