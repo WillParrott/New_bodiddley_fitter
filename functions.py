@@ -81,6 +81,7 @@ def make_pdata(filename,models):
     dset = cf.read_dataset(filename)
     sizes = []
     for key in dset:
+        #print(key)
         sizes.append(np.shape(dset[key]))
     if len(set(sizes)) != 1:
         print('Not all elements of gpl the same size')
@@ -106,7 +107,7 @@ def effective_mass_calc(tag,correlator,tp):
     for i in range(1,len(rav)-1):
         if abs((rav[i+1]-rav[i]).mean) < diff:
             diff = abs((rav[i+1]-rav[i]).mean)
-            M_eff = (rav[i] + rav[i+1])/2
+            M_eff = (rav[i] + rav[i+1])/2 
     return(M_eff)
 
 ######################################################################################################
@@ -305,7 +306,7 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,notwist0,
                 # Parent -- oscillating part
                 prior['log(o{0}:a)'.format(tag)] = gv.log(gv.gvar(N * [an]))
                 prior['log(dE:o{0})'.format(tag)] = gv.log(gv.gvar(N * [En]))
-                prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.gvar((M_eff+gv.gvar(En)/5).mean,loosener*Fit['oMloosener']*((M_eff+gv.gvar(En)/5).mean)))
+                prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.gvar((M_eff+gv.gvar(En)*(4/5)).mean,loosener*Fit['oMloosener']*((M_eff+gv.gvar(En)*(4/5)).mean)))
                 
                 
         if corr in daughters:
@@ -344,7 +345,7 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,notwist0,
                             #prior['log(o{0}:a)'.format(tag)][0] = gv.log((prior['o{0}:a'.format(tag0)][0]/gv.sqrt(1 + ap2/(prior['dE:o{0}'.format(tag0)][0])**2)) * (1 + prior['od2']*ap2/(np.pi)**2) )
                             prior['log(o{0}:a)'.format(tag)][0] = gv.log(gv.gvar(gv.gvar(newaon).mean,loosener*Fit['oloosener']*gv.gvar(newaon).mean))
                         else:
-                            prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.gvar((M_eff+gv.gvar(En)/1).mean,loosener*Fit['oMloosener']*((M_eff+gv.gvar(En)/1).mean))) 
+                            prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.gvar((M_eff+gv.gvar(En)/2).mean,loosener*Fit['oMloosener']*((M_eff+gv.gvar(En)/2).mean))) # kaon splitting 
                             #prior['log(dE:o{0})'.format(tag)][0] = gv.log(prior['dE:{0}'.format(tag)][0] + gv.gvar(En))
                             prior['log(o{0}:a)'.format(tag)][0] = gv.log(gv.gvar(gv.gvar(newaon).mean,loosener*Fit['oloosener']*gv.gvar(newaon).mean))
                         
@@ -608,7 +609,6 @@ def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,svdnoise,priornoise,curre
     print('Models',models)
     fitter = cf.CorrFitter(models=models, fitter='gsl_multifit', alg='subspace2D', solver='cholesky', maxit=5000, fast=False, tol=(1e-6,0.0,0.0))
     p0 = get_p0(Fit,'unchained',Nexp,allcorrs,prior,allcorrs) # FitCorrs = allcorrs 
-    #print('p0',p0)
     print(30 * '=','Unchained-Unmarginalised','Nexp =',Nexp,'Date',datetime.datetime.now())
     fit = fitter.lsqfit(pdata=data, prior=prior, p0=p0, svdcut=svdcut, add_svdnoise=svdnoise, add_priornoise=priornoise,debug=True)
     update_p0(fit.pmean,fit.pmean,Fit,'unchained',Nexp,allcorrs,allcorrs,fit.Q) #fittype=chained, for marg,includeN
@@ -665,6 +665,9 @@ def print_results(p,prior):
             key = key.split('(')[1].split(')')[0]
         if key.split(':')[0] =='dE' and key.split(':')[1][0] != 'o':
             print('{0:<30}{1:<15}{2:<15.3%}{3:<15}{4:.2%}'.format(key,p[key][0],p[key][0].sdev/p[key][0].mean,prior[key][0],prior[key][0].sdev/prior[key][0].mean))
+            #print(Fit['BG-Tag'].format(Fit['masses'][0]))
+            #if '{0}'.format(key.split(':')[1]) == Fit['BG-Tag'].format(Fit['masses'][0]):
+            #    print('split: ', p['dE:{0}'.format(Fit['BNG-Tag'].format(Fit['masses'][0]))][0]-p[key][0])  
     print('')
     print('Oscillating ground state energies')
     print(100*'-')

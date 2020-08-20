@@ -24,7 +24,7 @@ def unmake_gvar_vec(vec):
 ######################################################################################################
 
 
-def create_t_plot(location,filename,y1,y1label,y2=None,y2label=None,y3=None,y3label=None):
+def create_t_plot(location,filename,y1,y1label,y2=None,y2label=None,y3=None,y3label=None,y4=None,y4label=None):
     #Plots x against y where x is a list of floats and y of gvars
     y1mean,y1err = unmake_gvar_vec(y1)
     x1 = np.arange(0,len(y1mean))
@@ -34,7 +34,9 @@ def create_t_plot(location,filename,y1,y1label,y2=None,y2label=None,y3=None,y3la
     if y3 != None:
         y3mean,y3err = unmake_gvar_vec(y3)
         x3 = np.arange(0,len(y3mean))
-        
+    if y4 != None:
+        y4mean,y4err = unmake_gvar_vec(y4)
+        x4 = np.arange(0,len(y4mean))    
     plt.figure(filename,figsize=((figsca,2*figsca/(1+np.sqrt(5)))))
     plt.rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
     plt.rc('text', usetex=True)
@@ -43,6 +45,8 @@ def create_t_plot(location,filename,y1,y1label,y2=None,y2label=None,y3=None,y3la
         plt.errorbar(x2,y2mean,yerr=y2err,fmt='ro',ms=12,label=y2label)
     if y3 != None:
         plt.errorbar(x3,y3mean,yerr=y3err,fmt='bo',ms=12,label=y3label)
+    if y4 != None:
+        plt.errorbar(x4,y4mean,yerr=y4err,fmt='go',ms=12,label=y4label)
     plt.axes().tick_params(labelright=True,which='both',width=2,labelsize=30)
     plt.axes().tick_params(which='major',length=15)
     plt.axes().tick_params(which='minor',length=8)
@@ -138,12 +142,16 @@ def plots(Fit,daughters,parents,currents):
                     create_t_plot(directory,filename,ylog[0],'T={0}'.format(Fit['Ts'][0]),ylog[1],'T={0}'.format(Fit['Ts'][1]))
                 if len(Fit['Ts']) == 3:
                     create_t_plot(directory,filename,ylog[0],'T={0}'.format(Fit['Ts'][0]),ylog[1],'T={0}'.format(Fit['Ts'][1]),ylog[2],'T={0}'.format(Fit['Ts'][2]))
+                if len(Fit['Ts']) == 4:
+                    create_t_plot(directory,filename,ylog[0],'T={0}'.format(Fit['Ts'][0]),ylog[1],'T={0}'.format(Fit['Ts'][1]),ylog[2],'T={0}'.format(Fit['Ts'][2]),ylog[3],'T={0}'.format(Fit['Ts'][3]))
                     ###### divide ######
                 filename = '{0}_m{1}_tw{2}_rat.pdf'.format(corr,mass,twist)
                 if len(Fit['Ts']) == 2:
                     create_t_plot(directory,filename,yrat[0],'T={0}'.format(Fit['Ts'][0]),yrat[1],'T={0}'.format(Fit['Ts'][1]))
                 if len(Fit['Ts']) == 3:
                     create_t_plot(directory,filename,yrat[0],'T={0}'.format(Fit['Ts'][0]),yrat[1],'T={0}'.format(Fit['Ts'][1]),yrat[2],'T={0}'.format(Fit['Ts'][2]))
+                if len(Fit['Ts']) == 4:
+                    create_t_plot(directory,filename,yrat[0],'T={0}'.format(Fit['Ts'][0]),yrat[1],'T={0}'.format(Fit['Ts'][1]),yrat[2],'T={0}'.format(Fit['Ts'][2]),yrat[3],'T={0}'.format(Fit['Ts'][3]))
     return()
 
 ######################################################################################################
