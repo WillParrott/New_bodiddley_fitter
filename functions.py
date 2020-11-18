@@ -1,4 +1,4 @@
-B65;6003;1cimport gvar as gv
+import gvar as gv
 import corrfitter as cf
 import numpy as np
 import collections
@@ -142,6 +142,63 @@ def effective_amplitude_calc(tag,correlator,tp,M_eff,Fit,corr):
         print('Replaced A_eff for {0} {1} -> {2}'.format(tag,A_eff,an))
         A_eff = an
     return(A_eff)
+
+########################################################################################
+
+def effective_V_calc(corr,daughter,parent,correlator,dcorr,pcorr,Fit,mass,twist,pA_eff,dA_eff):
+    #finds the effective V_nn[0][0]
+    tp = Fit['tp']
+    T = Fit['Ts'][-1]
+    dtmin = Fit['tmin{0}'.format(daughter)]
+    ptmin = Fit['tmin{0}'.format(parent)]
+    Vtmin = Fit['{0}tmin'.format(corr)]
+    dcorr2 = []
+    pcorr2 = []
+    Vcorr2 = []
+    V_effs = []
+    
+    #print(corr,daughter,parent,mass,twist)
+    for i in range(dtmin):
+        dcorr2.append(0)
+    dcorr2.extend(dcorr)
+    for i in range(int(tp/2)-len(dcorr2)+1):
+        dcorr2.append(0)
+    #print(dcorr2)
+
+    for i in range(ptmin):
+        pcorr2.append(0)
+    pcorr2.extend(pcorr)
+    for i in range(int(tp/2)-len(pcorr2)+1):
+        pcorr2.append(0)
+    #print(pcorr2)
+
+    for i in range(Vtmin):
+        Vcorr2.append(0)
+    Vcorr2.extend(correlator)
+    for i in range(T-len(Vcorr2)+1):
+        Vcorr2.append(0)
+    #print(Vcorr2)
+    
+    for t in range(T):
+        numerator = Vcorr2[t]*pA_eff*dA_eff
+        denominator = dcorr2[t]*pcorr2[T-t]
+        if numerator != 0 and denominator !=0:
+            V_effs.append(numerator/denominator)
+    rav = []
+    for i in range(len(V_effs)-4):
+        rav.append((V_effs[i] + V_effs[i+1] + V_effs[i+2] + V_effs[i+3])/4)
+    V_eff = rav[0]
+    diff = abs((rav[1] - rav[0]).mean)
+    for i in range(1,len(rav)-1):
+        if abs((rav[i+1]-rav[i]).mean) < diff:
+            diff = abs((rav[i+1]-rav[i]).mean)
+            if (rav[i] + rav[i+1]) > 0:
+                V_eff = (rav[i] + rav[i+1])/2
+    V = gv.gvar(Fit['{0}Vnn0'.format(corr)])
+    if abs((V_eff.mean-V).mean/(V_eff.mean-V).sdev) > 1:
+        print('Replaced V_eff for {0} m {1} tw {2}: {3} --> {4}'.format(corr,mass,twist,V_eff,V))
+        V_eff = V
+    return(V_eff)
 
 #######################################################################################################
 
@@ -376,9 +433,29 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,notwist0,
         if corr in currents:
             for mass in Fit['masses']:
                 for twist in Fit['twists']:
-                    Vnn0 = '{0}({1})'.format(gv.gvar(Fit['{0}Vnn0'.format(corr)]).mean,loosener*gv.gvar(Fit['{0}Vnn0'.format(corr)]).sdev)
-                    Vn = '{0}({1})'.format(gv.gvar(Fit['{0}Vn'.format(corr)]).mean,loosener*gv.gvar(Fit['{0}Vn'.format(corr)]).sdev)
-                    V0 = '{0}({1})'.format(gv.gvar(Fit['{0}V0'.format(corr)]).mean,loosener*gv.gvar(Fit['{0}V0'.format(corr)]).sdev)
+                    if twist =='0' and corr in notwist0:
+                        pass
+                    else: 
+                        daughter=daughters[currents.index(corr)]
+                        parent=parents[currents.index(corr)]
+                        dcorr = data[Fit['{0}-Tag'.format(daughter)].format(twist)]
+                        pcorr = data[Fit['{0}-Tag'.format(parent)].format(mass)]
+                        correlator = data[Fit['threePtTag{0}'.format(corr)].format(Fit['Ts'][-1],Fit['m_s'],mass,Fit['m_l'],twist)]
+                        ptag = Fit['{0}-Tag'.format(parent)].format(mass)
+                        pM_eff = effective_mass_calc(ptag,data[ptag],tp)
+                        pa_eff = effective_amplitude_calc(ptag,data[ptag],tp,pM_eff,Fit,parent)
+
+                        dtag = Fit['{0}-Tag'.format(daughter)].format(twist)
+                        dM_eff = effective_mass_calc(dtag,data[dtag],tp)
+                        da_eff = effective_amplitude_calc(dtag,data[dtag],tp,dM_eff,Fit,daughter)
+
+                        V_eff = effective_V_calc(corr,daughter,parent,correlator,dcorr,pcorr,Fit,mass,twist,da_eff,pa_eff)
+                        if V_eff.mean != gv.gvar(Fit['{0}Vnn0'.format(corr)]).mean:
+                            Vnn0 = '{0}({1})'.format(V_eff.mean,loosener*V_eff.mean*Fit['Vloosener'])
+                        else:
+                            Vnn0 = '{0}({1})'.format(V_eff.mean,loosener*V_eff.sdev)
+                        Vn = '{0}({1})'.format(gv.gvar(Fit['{0}Vn'.format(corr)]).mean,loosener*gv.gvar(Fit['{0}Vn'.format(corr)]).sdev)
+                        V0 = '{0}({1})'.format(gv.gvar(Fit['{0}V0'.format(corr)]).mean,loosener*gv.gvar(Fit['{0}V0'.format(corr)]).sdev)
                     if twist =='0' and corr in notwist0:
                         pass
                     elif twist =='0' and daughters[currents.index(corr)] in non_oscillating :
