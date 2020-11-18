@@ -1,4 +1,4 @@
-import gvar as gv
+B65;6003;1cimport gvar as gv
 import corrfitter as cf
 import numpy as np
 import collections
@@ -13,6 +13,11 @@ import os
 import pickle
 import copy
 #from plotting import *
+import lsqfit
+lsqfit.nonlinear_fit.set(fitter='gsl_multifit',alg='subspace2D',scaler='more',solver='cholesky')#,solver='cholesky')
+####################################
+binsize = 1 
+maxiter=5000
 #######################################################################################################
 
 def read_setup(setup):
@@ -63,7 +68,8 @@ def make_params(Fit,FitMasses,FitTwists,FitTs,daughters,currents,parents):
 #######################################################################################################
 
 def make_data(filename):
-    # Reads in filename.gpl, checks all keys have same configuration numbers, returns averaged data 
+    # Reads in filename.gpl, checks all keys have same configuration numbers, returns averaged data
+ 
     dset = cf.read_dataset(filename)
     sizes = []
     for key in dset:
@@ -81,7 +87,7 @@ def make_pdata(filename,models):
     dset = cf.read_dataset(filename)
     sizes = []
     for key in dset:
-        #print(key)
+        #print(key,np.shape(dset[key]))
         sizes.append(np.shape(dset[key]))
     if len(set(sizes)) != 1:
         print('Not all elements of gpl the same size')
@@ -162,7 +168,26 @@ def SVD_diagnosis(Fit,models,corrs,svdfac,currents):
         pickle_off.close()
     else:
         print('Calculating SVD for {0}'.format(corrs))
-        svd = gv.dataset.svd_diagnosis(cf.read_dataset('{0}{1}.gpl'.format(Fit['file_location'],Fit['filename'])), models=models, nbstrap=20).svdcut
+        s = gv.dataset.svd_diagnosis(cf.read_dataset('{0}{1}.gpl'.format(Fit['file_location'],Fit['filename'])), models=models, nbstrap=20)
+        svd = s.svdcut
+        ######## save plot ##########################
+        plt.figure()
+        x = s.val / s.val[-1]
+        ratio = s.bsval / s.val
+        idx = x > s.mincut
+        ratio = ratio[idx]
+        x = x[idx]
+        y = gv.mean(ratio)
+        yerr = gv.sdev(ratio)
+        plt.errorbar(x=x, y=y, yerr=yerr, fmt='+', color='b')
+        sig = (2. / len(s.val)) ** 0.5
+        plt.plot([x[0], x[-1]], [1. - sig, 1. - sig], 'k:')
+        plt.axhline(1,ls='--',color='k')
+        plt.axvline(s.svdcut,ls=':',color='g')
+        #plt.axvline(0.013,ls='--',color='g')
+        plt.xscale('log')
+        plt.savefig('svd_plots/{0}.pdf'.format(filename.split('/')[1]))
+        ###############################################
         pickle_on = open(filename,"wb")
         print('Calculated SVD for {0} : {1:.2g} x {2} = {3:.2g}'.format(corrs,svd,svdfac,svd*svdfac))
         pickle.dump(svd,pickle_on)
@@ -287,7 +312,6 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,notwist0,
             prior['oc2_{0}'.format(corr)] = gv.gvar('0.0(1.0)')
         print('Daughter oscillating twists correlated')
     
-    ex1 = 0.5 #multiples error on first exited state relative to other excited states 
     tp = Fit['tp']
     En = '{0}({1})'.format(0.5*Fit['a'],0.25*Fit['a']*loosener) #Lambda with error of half
     an = '{0}({1})'.format(gv.gvar(Fit['an']).mean,gv.gvar(Fit['an']).sdev*loosener)
@@ -523,16 +547,16 @@ def save_fit(fit,Fit,allcorrs,fittype,Nexp,SvdFactor,PriorLoosener,currents,smal
 
 ######################################################################################################
 
-def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,save,smallsave,GBF):#if GBF = None doesn't pass GBF, else passed GBF 
+def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,noise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,save,smallsave,GBF):#if GBF = None doesn't pass GBF, else passed GBF 
     #do chained fit with no marginalisation Nexp = NMax
     models = copy.deepcopy(modelsA)
     if len(modelsB[0]) !=0: 
         models.extend(modelsB)
     print('Models',models)
-    fitter = cf.CorrFitter(models=models, fitter='gsl_multifit', alg='subspace2D', solver='cholesky', maxit=5000, fast=False, tol=(1e-6,0.0,0.0))
-    p0 = get_p0(Fit,'chained',Nexp,allcorrs,prior,FitCorrs)
+    fitter = cf.CorrFitter(models=models, maxit=maxiter, fast=False, tol=(1e-6,0.0,0.0))
+    p0 = get_p0(Fit,'chained',Nexp,allcorrs,prior,FitCorrs) 
     print(30 * '=','Chained-Unmarginalised','Nexp =',Nexp,'Date',datetime.datetime.now())
-    fit = fitter.chained_lsqfit(data=data, prior=prior, p0=p0, add_svdnoise=svdnoise, add_priornoise=priornoise,debug=True)
+    fit = fitter.chained_lsqfit(data=data, prior=prior, p0=p0, noise=noise,debug=True)
     update_p0([f.pmean for f in fit.chained_fits.values()],fit.pmean,Fit,'chained',Nexp,allcorrs,FitCorrs,fit.Q) #fittype=chained, for marg,includeN
     if GBF == None:
         print(fit)
@@ -562,7 +586,7 @@ def do_chained_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,curre
 
 ######################################################################################################
 
-def do_chained_marginalised_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,save,smallsave,GBF,Marginalised):#if GBF = None doesn't pass GBF, else passed GBF 
+def do_chained_marginalised_fit(data,prior,Nexp,modelsA,modelsB,Fit,noise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,save,smallsave,GBF,Marginalised):#if GBF = None doesn't pass GBF, else passed GBF 
     #do chained fit with marginalisation nterm = nexp,nexp Nmarg=Marginalisation us in p0 bits
     models = copy.deepcopy(modelsA)
     if len(modelsB[0]) !=0:
@@ -571,10 +595,10 @@ def do_chained_marginalised_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,pri
     else:
         print('Marginalisation not applied as no parrallelised models')
     print('Models',models)
-    fitter = cf.CorrFitter(models=models, fitter='gsl_multifit', alg='subspace2D', solver='cholesky', maxit=5000, fast=False, tol=(1e-6,0.0,0.0))
+    fitter = cf.CorrFitter(models=models, maxit=maxiter, fast=False, tol=(1e-6,0.0,0.0))
     p0 = get_p0(Fit,'chained-marginalised_N{0}{0}'.format(Nexp),Marginalised,allcorrs,prior,FitCorrs)
     print(30 * '=','Chained-marginalised','Nexp =',Marginalised,'nterm = ({0},{0})'.format(Nexp),'Date',datetime.datetime.now())
-    fit = fitter.chained_lsqfit(data=data, prior=prior, p0=p0, add_svdnoise=svdnoise, add_priornoise=priornoise,debug=True)
+    fit = fitter.chained_lsqfit(data=data, prior=prior, p0=p0, noise=noise,debug=True)
     update_p0([f.pmean for f in fit.chained_fits.values()],fit.pmean,Fit,'chained-marginalised_N{0}{0}'.format(Nexp),Marginalised,allcorrs,FitCorrs,fit.Q,True) #fittype=chained, for marg,includeN
     if GBF == None:
         print(fit)#.format(pstyle='m'))
@@ -604,18 +628,18 @@ def do_chained_marginalised_fit(data,prior,Nexp,modelsA,modelsB,Fit,svdnoise,pri
 
 ######################################################################################################
 
-def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,save,smallsave,GBF):#if GBF = None doesn't pass GBF, else passed GBF 
+def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,noise,currents,allcorrs,SvdFactor,PriorLoosener,save,smallsave,GBF):#if GBF = None doesn't pass GBF, else passed GBF 
     #do chained fit with no marginalisation Nexp = NMax
     print('Models',models)
-    fitter = cf.CorrFitter(models=models, fitter='gsl_multifit', alg='subspace2D', solver='cholesky', maxit=5000, fast=False, tol=(1e-6,0.0,0.0))
+    fitter = cf.CorrFitter(models=models, maxit=maxiter, fast=False, tol=(1e-6,0.0,0.0))
     p0 = get_p0(Fit,'unchained',Nexp,allcorrs,prior,allcorrs) # FitCorrs = allcorrs 
     print(30 * '=','Unchained-Unmarginalised','Nexp =',Nexp,'Date',datetime.datetime.now())
-    fit = fitter.lsqfit(pdata=data, prior=prior, p0=p0, svdcut=svdcut, add_svdnoise=svdnoise, add_priornoise=priornoise,debug=True)
+    fit = fitter.lsqfit(pdata=data, prior=prior, p0=p0, svdcut=svdcut, noise=noise,debug=True)
     update_p0(fit.pmean,fit.pmean,Fit,'unchained',Nexp,allcorrs,allcorrs,fit.Q) #fittype=chained, for marg,includeN
     if GBF == None:
         print(fit)
         print('chi^2/dof = {0:.3f} Q = {1:.3f} logGBF = {2:.0f}'.format(fit.chi2/fit.dof,fit.Q,fit.logGBF))
-        print_results(fit.p,prior)
+        print_results(fit.p,prior)#,Fit)
         print_Z_V(fit.p,Fit,allcorrs)
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
             save_fit(fit,Fit,allcorrs,'unchained',Nexp,SvdFactor,PriorLoosener,currents,smallsave)
@@ -630,7 +654,7 @@ def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,svdnoise,priornoise,curre
     else:
         print(fit)
         print('chi^2/dof = {0:.3f} Q = {1:.3f} logGBF = {2:.0f}'.format(fit.chi2/fit.dof,fit.Q,fit.logGBF))
-        print_results(fit.p,prior)
+        print_results(fit.p,prior)#,Fit)
         print_Z_V(fit.p,Fit,allcorrs)
         print('log(GBF) went up more than 1: {0:.2f}'.format(fit.logGBF - GBF))
         if fit.Q > 0.05 and save: #threshold for a 'good' fit
@@ -654,7 +678,7 @@ def print_p_p0(p,p0,prior):
 
 #####################################################################################################
 
-def print_results(p,prior):
+def print_results(p,prior):#,Fit):
     print(100*'-')
     print('{0:<30}{1:<15}{2:<15}{3:<15}{4}'.format('key','p','p error','prior','prior error'))
     print(100*'-')
@@ -665,9 +689,8 @@ def print_results(p,prior):
             key = key.split('(')[1].split(')')[0]
         if key.split(':')[0] =='dE' and key.split(':')[1][0] != 'o':
             print('{0:<30}{1:<15}{2:<15.3%}{3:<15}{4:.2%}'.format(key,p[key][0],p[key][0].sdev/p[key][0].mean,prior[key][0],prior[key][0].sdev/prior[key][0].mean))
-            #print(Fit['BG-Tag'].format(Fit['masses'][0]))
             #if '{0}'.format(key.split(':')[1]) == Fit['BG-Tag'].format(Fit['masses'][0]):
-            #    print('split: ', p['dE:{0}'.format(Fit['BNG-Tag'].format(Fit['masses'][0]))][0]-p[key][0])  
+             #   print('split: ', p['dE:{0}'.format(Fit['BNG-Tag'].format(Fit['masses'][0]))][0]-p[key][0])  
     print('')
     print('Oscillating ground state energies')
     print(100*'-')

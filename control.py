@@ -62,6 +62,7 @@ VC['KNG-Tag'] = 'K_G5-G5X_tw{0}'
 VC['threePtTagS'] = 'scalar_T{0}_m{1}_m{2}_m{3}_tw{4}'
 VC['threePtTagV'] = 'vector_T{0}_m{1}_m{2}_m{3}_tw{4}'
 VC['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
+VC['svd'] = 1.0
 ################ C PARAMETERS  #############################
 C = collections.OrderedDict()
 C['conf'] = 'C'
@@ -108,7 +109,7 @@ C['KNG-Tag'] = 'K_G5-G5X_tw{0}'
 C['threePtTagS'] = 'scalar_T{0}_m{1}_m{2}_m{3}_tw{4}'
 C['threePtTagV'] = 'vector_T{0}_m{1}_m{2}_m{3}_tw{4}'
 C['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
-
+C['svd'] = 0.5
 ################ F PARAMETERS  #############################
 F = collections.OrderedDict()
 F['conf'] = 'F'
@@ -156,7 +157,7 @@ F['KNG-Tag'] = 'K_G5-G5X_tw{0}'
 F['threePtTagS'] = 'scalar_T{0}_m{1}_m{2}_m{3}_tw{4}'
 F['threePtTagV'] = 'vector_T{0}_m{1}_m{2}_m{3}_tw{4}'
 F['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
-
+F['svd'] = 1.0
 ################ SF PARAMETERS #############################
 SF = collections.OrderedDict()
 SF['conf'] = 'SF'
@@ -178,9 +179,6 @@ SF['tminBG'] = 5 #
 SF['tminBNG'] = 2 # 
 SF['tminKG'] = 5
 SF['tminKNG'] = 3
-#SF['tmaxG'] = 67                             #72 is upper limit, ie includes all data 
-#SF['tmaxNG'] = 71
-#SF['tmaxD'] = 71                             #72 is upper limit, ie goes up to 71
 SF['Stmin'] = 2
 SF['Vtmin'] = 2
 SF['Ttmin'] = 2
@@ -207,44 +205,40 @@ SF['KNG-Tag'] = 'K_G5-G5X_tw{0}'
 SF['threePtTagS'] = 'scalar_T{0}_m{1}_m{2}_m{3}_tw{4}'
 SF['threePtTagV'] = 'vector_T{0}_m{1}_m{2}_m{3}_tw{4}'
 SF['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
-
+SF['svd'] = 1.0
 ################ UF PARAMETERS #############################
 UF = collections.OrderedDict()
 UF['conf'] = 'UF'
-UF['filename'] = "run-KBscalarvectortensor_261cfgs_neg"
+UF['filename'] = "run-KBscalarvectortensor_375cfgs_neg"
 UF['file_location'] = "../../ultrafine/extract/"
 UF['masses'] = ['0.194','0.45','0.6','0.8']
 UF['twists'] = ['0','0.706','1.529','2.235','4.705']
-#SF['mtw'] = [[1,1,1,0,0],[1,1,1,1,0],[1,1,1,1,1],[1,1,1,1,1]]
 UF['m_l'] = '0.00316'
 UF['m_s'] = '0.0165'
-UF['Ts'] = [33,40]
+UF['Ts'] = [24,33,40]
 UF['tp'] = 192
 UF['L'] = 64
-UF['tmaxesBG'] = [96,96,88,80]
-UF['tmaxesBNG'] = [96,85,86,75]
-UF['tmaxesKG'] = [96,96,85,65,33]
-UF['tmaxesKNG'] = [96,96,85,65,33]
-UF['tminBG'] = 7
-UF['tminBNG'] = 5
-UF['tminKG'] = 7
-UF['tminKNG'] = 6
-#UF['tmaxG'] = 67                             #72 is upper limit, ie includes all data 
-#UF['tmaxNG'] = 71
-#UF['tmaxD'] = 71                             #72 is upper limit, ie goes up to 71
-UF['Stmin'] = 2
-UF['Vtmin'] = 2
-UF['Ttmin'] = 2
+UF['tmaxesBG'] = [96,96,96,93]
+UF['tmaxesBNG'] = [96,96,96,93]
+UF['tmaxesKG'] = [96,96,92,68,39]
+UF['tmaxesKNG'] = [96,96,92,66,39]
+UF['tminBG'] = 3
+UF['tminBNG'] = 3
+UF['tminKG'] = 5
+UF['tminKNG'] = 4
+UF['Stmin'] = 1
+UF['Vtmin'] = 1
+UF['Ttmin'] = 1
 UF['an'] = '0.08(0.10)'
 UF['aon'] = '0.01(2)'
-UF['SVnn0'] = '1.5(1.0)'                        #Prior for SV_nn[0][0]
+UF['SVnn0'] = '1.25(1.0)'                        #Prior for SV_nn[0][0]
 UF['SVn'] = '0.0(5)'                        #Prior for SV_??[n][n]
 UF['SV0'] = '0.0(1.0)'                          #Prior for SV_no[0][0] etc
-UF['VVnn0'] = '1.0(5)'
+UF['VVnn0'] = '0.75(75)'
 UF['VVn'] = '0.0(5)'
 UF['VV0'] = '0.0(2.0)'
 UF['TVnn0'] = '0.2(1)'
-UF['TVn'] = '0.0(1)'
+UF['TVn'] = '0.0(5)'
 UF['TV0'] = '0.0(5)'
 UF['loosener'] = 0.5                         #Loosener on a_eff
 UF['oloosener'] = 0.5                         #Loosener on oscillating ground state a
@@ -258,23 +252,71 @@ UF['KNG-Tag'] = 'K_G5-G5X_tw{0}'
 UF['threePtTagS'] = 'scalar_T{0}_m{1}_m{2}_m{3}_tw{4}'
 UF['threePtTagV'] = 'vector_T{0}_m{1}_m{2}_m{3}_tw{4}'
 UF['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
-
+UF['svd'] = 1.0
+################ Fp PARAMETERS  #############################
+Fp = collections.OrderedDict()
+Fp['conf'] = 'Fp'
+#Fp['filename'] = "fphys-KBscalarvectortensor_119cfgs_neg"
+Fp['filename'] = "all_streams_620cfgs"
+Fp['file_location'] = "../../fine_physical/extract/"
+Fp['masses'] = ['0.433','0.683','0.8']
+Fp['twists'] = ['0','0.8563','2.998','5.140']
+#Fp['mtw'] = [[1,1,1,1,0,0],[1,1,1,1,1,0],[1,1,1,1,1,1],[1,1,1,1,1,1]]
+Fp['m_l'] = '0.0012'
+Fp['m_s'] = '0.036'
+Fp['Ts'] = [14,17,20]
+Fp['tp'] = 96
+Fp['L'] = 64
+Fp['tmaxesBG'] = [48,48,48]
+Fp['tmaxesBNG'] = [48,48,48]
+Fp['tmaxesKG'] = [48,48,44,25]            #48 is upper limit, ie goes up to 47
+Fp['tmaxesKNG'] = [48,48,44,24] 
+Fp['tminBG'] = 3
+Fp['tminBNG'] = 3
+Fp['tminKG'] = 3
+Fp['tminKNG'] = 3                           
+Fp['Stmin'] = 2
+Fp['Vtmin'] = 2
+Fp['Ttmin'] = 2
+Fp['an'] = '0.10(10)'
+Fp['aon'] = '0.05(05)'
+Fp['SVnn0'] = '1.50(75)'                        #prior for SV_nn[0][0]
+Fp['SVn'] = '0.0(5)'                        #Prior for SV_??[n][n]
+Fp['SV0'] = '0.0(1.5)'                          #Prior for SV_no[0][0] etc
+Fp['VVnn0'] = '1.0(5)'                         
+Fp['VVn'] = '0.0(5)'
+Fp['VV0'] = '0.0(1.5)'
+Fp['TVnn0'] = '0.5(5)'
+Fp['TVn'] = '0.0(5)'
+Fp['TV0'] = '0.0(5)'
+Fp['loosener'] = 0.05                          #Loosener on a_eff 
+Fp['oloosener'] = 1.0       #Loosener on oscillating ground  state a
+Fp['Mloosener'] = 0.05                        #Loosener on ground state 
+Fp['oMloosener'] = 0.1       #Loosener on oscillating ground state 
+Fp['a'] = 0.1715/(1.9518*0.1973 )
+Fp['BG-Tag'] = 'B_G5-G5_m{0}'
+Fp['BNG-Tag'] = 'B_G5T-G5T_m{0}'
+Fp['KG-Tag'] = 'K_G5-G5_tw{0}'
+Fp['KNG-Tag'] = 'K_G5-G5X_tw{0}'
+Fp['threePtTagS'] = 'scalar_T{0}_m{1}_m{2}_m{3}_tw{4}'
+Fp['threePtTagV'] = 'vector_T{0}_m{1}_m{2}_m{3}_tw{4}'
+Fp['threePtTagT'] = 'tensor_T{0}_m{1}_m{2}_m{3}_tw{4}'
+Fp['svd'] = 0.5
 ################ USER INPUTS ################################
 #############################################################
 
-Fit = SF                                               # Choose to fit F, SF , UF
+Fit = Fp                                              # Choose to fit F, SF , UF
 FitMasses = [0,1,2,3]                                 # Choose which masses to fit
 FitTwists = [0,1,2,3,4]                               # Choose which twists to fit
-FitTs = [0,1,2]#,3]
-FitCorrs = [['BG','BNG'],['KG','KNG'],[['S'],['V'],['T']]]  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
+FitTs = [0,1,2,3]
+FitCorrs = ['BG']#['BG','BNG'],['KG','KNG'],[['S'],['V'],['T']]]  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
 Chained = False   # If False puts all correlators above in one fit no matter how they are organised
 Marginalised = False # set to eg 6. Two points will be run up to 6 then marginalised to Nmin<N<Nmax
-SaveFit = True
+SaveFit =False
 smallsave = True #saves only the ground state non-oscillating and 3pts
-svdnoise = False
-priornoise = False
+noise = False #all noise
 ResultPlots = False         # Tell what to plot against, "Q", "N","Log(GBF)", False
-SvdFactor = 0.001                       # Multiplies saved SVD
+SvdFactor = 1.0*Fit['svd']                       # Multiplies saved SVD
 PriorLoosener = 1.0                   # Multiplies all prior error by loosener
 Nmax = 5                               # Number of exp to fit for 2pts in chained, marginalised fit
 Nmin = 5                              #Number to start on
@@ -283,7 +325,6 @@ FitToGBF = False                  # If false fits to Nmax
 setup = ['KG-S-BG','KG-V-BNG','KNG-T-BNG']
 notwist0 = ['T'] #list any fits which do not use tw-0
 non_oscillating = [] #any daughters which do no osciallate (only tw 0 is affected)
-
 ##############################################################
 ##############################################################
 
@@ -312,13 +353,13 @@ def main():
             while GBF2-GBF1 > 1:
                 GBF1 = GBF2
                 prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,notwist0,non_oscillating)
-                GBF2 = do_chained_fit(data,prior,N,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,smallsave,GBF1)
+                GBF2 = do_chained_fit(data,prior,N,modelsA,modelsB,Fit,noise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,smallsave,GBF1)
                 N += 1
             
         else:
             for N in range(Nmin,Nmax+1):
                 prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,notwist0,non_oscillating)
-                do_chained_fit(data,prior,N,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,smallsave,None)
+                do_chained_fit(data,prior,N,modelsA,modelsB,Fit,noise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,smallsave,None)
 ############################ Do chained marginalised fit ##############################################
     elif Chained and Marginalised != False:
         if FitToGBF:    #fits with priorn(Marginalised) and nterm = n,n
@@ -328,13 +369,13 @@ def main():
             while GBF2-GBF1 > 1:
                 GBF1 = GBF2
                 prior = make_prior(Fit,Marginalised,allcorrs,currents,daughters,parents,PriorLoosener,data,notwist0,non_oscillating)
-                GBF2 = do_chained_marginalised_fit(data,prior,N,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,smallsave,GBF1,Marginalised)
+                GBF2 = do_chained_marginalised_fit(data,prior,N,modelsA,modelsB,Fit,noise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,smallsave,GBF1,Marginalised)
                 N += 1
             
         else:
             for N in range(Nmin,Nmax+1):
                 prior = make_prior(Fit,Marginalised,allcorrs,currents,daughters,parents,PriorLoosener,data,notwist0,non_oscillating)
-                do_chained_marginalised_fit(data,prior,N,modelsA,modelsB,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,smallsave,None,Marginalised)
+                do_chained_marginalised_fit(data,prior,N,modelsA,modelsB,Fit,noise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,smallsave,None,Marginalised)
 ######################### Do unchained fit ############################################################
     else:
         if FitToGBF:
@@ -344,13 +385,13 @@ def main():
             while GBF2-GBF1 > 1:
                 GBF1 = GBF2
                 prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,notwist0,non_oscillating)
-                GBF2 = do_unchained_fit(data,prior,N,models,svdcut,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,SaveFit,smallsave,GBF1)
+                GBF2 = do_unchained_fit(data,prior,N,models,svdcut,Fit,noise,currents,allcorrs,SvdFactor,PriorLoosener,SaveFit,smallsave,GBF1)
                 N += 1
             
         else:
             for N in range(Nmin,Nmax+1):
                 prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,notwist0,non_oscillating)
-                do_unchained_fit(data,prior,N,models,svdcut,Fit,svdnoise,priornoise,currents,allcorrs,SvdFactor,PriorLoosener,SaveFit,smallsave,None)        
+                do_unchained_fit(data,prior,N,models,svdcut,Fit,noise,currents,allcorrs,SvdFactor,PriorLoosener,SaveFit,smallsave,None)        
 
 
 #####################################################################################################
