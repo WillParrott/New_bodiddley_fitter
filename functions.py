@@ -159,25 +159,32 @@ def effective_V_calc(corr,daughter,parent,correlator,dcorr,pcorr,Fit,mass,twist,
     V_effs = []
     
     #print(corr,daughter,parent,mass,twist)
-    for i in range(dtmin):
-        dcorr2.append(0)
-    dcorr2.extend(dcorr)
-    for i in range(int(tp/2)-len(dcorr2)+1):
-        dcorr2.append(0)
+    if len(dcorr) == int(tp):
+        dcorr2 = dcorr
+    else:
+        for i in range(dtmin):
+            dcorr2.append(0)
+        dcorr2.extend(dcorr)
+        for i in range(int(tp/2)-len(dcorr2)+1):
+            dcorr2.append(0)
     #print(dcorr2)
-
-    for i in range(ptmin):
-        pcorr2.append(0)
-    pcorr2.extend(pcorr)
-    for i in range(int(tp/2)-len(pcorr2)+1):
-        pcorr2.append(0)
+    if len(pcorr) == int(tp):
+        pcorr2 = pcorr
+    else:
+        for i in range(ptmin):
+            pcorr2.append(0)
+        pcorr2.extend(pcorr)
+        for i in range(int(tp/2)-len(pcorr2)+1):
+            pcorr2.append(0)
     #print(pcorr2)
-
-    for i in range(Vtmin):
-        Vcorr2.append(0)
-    Vcorr2.extend(correlator)
-    for i in range(T-len(Vcorr2)+1):
-        Vcorr2.append(0)
+    if len(correlator) == int(tp):
+        Vcorr2 = correlator
+    else:
+        for i in range(Vtmin):
+            Vcorr2.append(0)
+        Vcorr2.extend(correlator)
+        for i in range(T-len(Vcorr2)+1):
+            Vcorr2.append(0)
     #print(Vcorr2)
     
     for t in range(T):
@@ -203,13 +210,13 @@ def effective_V_calc(corr,daughter,parent,correlator,dcorr,pcorr,Fit,mass,twist,
 
 #######################################################################################################
 
-def SVD_diagnosis(Fit,models,corrs,svdfac,currents):
+def SVD_diagnosis(Fit,models,corrs,svdfac,currents,SepMass):
     binsize = Fit['binsize']
     #Feed models and corrs (list of corrs in this SVD cut)
     if list(set(corrs).intersection(currents)) ==[]:
-        filename = 'SVD/{0}{1}{2}{3}{4}{5}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(corrs),binsize)
+        filename = 'SVD/{0}{1}{2}{3}{4}{5}{6}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(corrs),binsize,SepMass)
     else:
-        filename = 'SVD/{0}{1}{2}{3}{4}{5}{6}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(corrs),strip_list(Fit['Ts']),binsize)
+        filename = 'SVD/{0}{1}{2}{3}{4}{5}{6}{7}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(corrs),strip_list(Fit['Ts']),binsize,SepMass)
     #print(filename)
     for corr in corrs:
        if 'tmin{0}'.format(corr) in Fit:
@@ -254,7 +261,7 @@ def SVD_diagnosis(Fit,models,corrs,svdfac,currents):
 
 #######################################################################################################
 
-def make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents,svdfac,Chained,allcorrs,links,parrlinks):
+def make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents,svdfac,Chained,allcorrs,links,parrlinks,SepMass):
     #several forms [(A,B,C,D)],[(A,B),(C),(D)],[(A,B),[(C),(D)]]
     #First make all models and then stick them into the correct chain
     models = collections.OrderedDict()
@@ -304,14 +311,14 @@ def make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents
             link = [] #link is models in link
             for corr in links[key]:
                 link.extend(models['{0}'.format(corr)]) 
-            svd = SVD_diagnosis(Fit,link,links[key],svdfac,currents)
+            svd = SVD_diagnosis(Fit,link,links[key],svdfac,currents,SepMass)
             finalmodelsA.append({'svdcut':svd})
             finalmodelsA.append(tuple(link))
         for key in parrlinks:
             link = [] #link is models in link
             for corr in parrlinks[key]:
                 link.extend(models['{0}'.format(corr)]) 
-            svd = SVD_diagnosis(Fit,link,parrlinks[key],svdfac,currents)
+            svd = SVD_diagnosis(Fit,link,parrlinks[key],svdfac,currents,SepMass)
             intermediate.append({'svdcut':svd})
             intermediate.append(tuple(link))
         finalmodelsB.append(intermediate)
@@ -320,7 +327,7 @@ def make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents
         finalmodels = []
         for corr in allcorrs:
             finalmodels.extend(models['{0}'.format(corr)])
-        svd = SVD_diagnosis(Fit,finalmodels,allcorrs,svdfac,currents)
+        svd = SVD_diagnosis(Fit,finalmodels,allcorrs,svdfac,currents,SepMass)
         return(tuple(finalmodels),svd)                
     
 
@@ -747,7 +754,81 @@ def do_unchained_fit(data,prior,Nexp,models,svdcut,Fit,noise,currents,allcorrs,S
             #print_fit_results(fit) do this later
         return(fit.logGBF)
 
+#######################################################################################################
 
+def do_sep_mass_fit(data,prior,Nexp,models,svdcut,Fit,noise,currents,allcorrs,SvdFactor,PriorLoosener,save,smallsave,GBF):
+    #if GBF = None doesn't pass GBF, else passed GBF 
+    #do chained fit with no marginalisation Nexp = NMax
+    print('Models',models)
+    fitter = cf.CorrFitter(models=models, maxit=maxiter, fast=False, tol=(1e-6,0.0,0.0))
+    p0 = get_p0(Fit,'sepmass',Nexp,allcorrs,prior,allcorrs) # FitCorrs = allcorrs 
+    print(30 * '=','Seperate Mass Fit','Nexp =',Nexp,'Date',datetime.datetime.now())
+    fit = fitter.lsqfit(data=data, prior=prior, p0=p0, svdcut=svdcut, noise=noise,debug=True)
+    update_p0(fit.pmean,fit.pmean,Fit,'sepmass',Nexp,allcorrs,allcorrs,fit.Q) #fittype=chained, for marg,includeN
+    print(fit)
+    print('chi^2/dof = {0:.3f} Q = {1:.3f} logGBF = {2:.0f}'.format(fit.chi2/fit.dof,fit.Q,fit.logGBF))
+    print_results(fit.p,prior)#,Fit)
+    return(fit)
+
+######################################################################################################
+
+def combine_sep_mass_fits(result,Fit,priors,allcorrs,Nexp,SvdFactor,PriorLoosener,currents,save,smallsave):
+    # this is not very good. It only works if the shared parameters are common to all masses, and only averages the ground state  non-oscillating energy.
+    combined = gv.BufferDict()
+    prior = gv.BufferDict()
+    shared = collections.OrderedDict()
+    for key in result[Fit['masses'][0]].p:
+        if key[0] == 'l':
+            key2 = key.split('(')[1].split(')')[0]
+            if key2.split(':')[0] =='dE' and key2.split(':')[1][0] != 'o':
+                if key in result[Fit['masses'][1]].p:
+                    shared[key] = []
+                    for mass2 in Fit['masses']:
+                        shared[key].append(result[mass2].p[key][0])
+    combined = copy.deepcopy(result[Fit['masses'][0]].palt)
+    prior = copy.deepcopy(priors[Fit['masses'][0]])
+    for mass in Fit['masses'][1:]:
+        for key in result[mass].p:
+            if key not in combined:
+                combined[key] = copy.deepcopy(result[mass].palt[key])
+                prior[key] = copy.deepcopy(priors[mass][key])
+    for key in shared:
+        combined[key][0] = lsqfit.wavg(shared[key])
+    
+    chi = 0
+    Q = 0
+    for mass in Fit['masses']:
+        chi += (result[mass].chi2/result[mass].dof)/len(Fit['masses'])
+        Q += (result[mass].Q)/len(Fit['masses'])
+    print('Mean chi^2/dof = {0:.3f} Q = {1:.3f}'.format(chi,Q))
+    print_results(combined,prior)#,Fit)
+    print_Z_V(combined,Fit,allcorrs)
+    if save:
+        save_combined_fit(combined,Fit,allcorrs,'sep_mass',Nexp,SvdFactor,PriorLoosener,currents,smallsave,chi,Q)
+    return()
+
+######################################################################################################################
+
+def save_combined_fit(fit,Fit,allcorrs,fittype,Nexp,SvdFactor,PriorLoosener,currents,smallsave,chi,Q):
+    filename = 'Fits/{0}{1}{2}{3}{4}{5}{6}_Nexp{7}_sfac{8}_pfac{9}_Q{10:.2f}_chi{11:.3f}_sm{12}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(allcorrs),strip_list(Fit['Ts']),fittype,Nexp,SvdFactor,PriorLoosener,Q,chi,smallsave)
+    for corr in allcorrs:
+        if corr in currents:
+            filename += '_{0}tmin{1}'.format(corr,Fit['{0}tmin'.format(corr)])
+    savedict = gv.BufferDict()
+    if smallsave:
+        for key in fit:
+            if key[0] == 'l':
+                key2 = key.split('(')[1].split(')')[0]
+                if key2.split(':')[0] =='dE' and key2.split(':')[1][0] != 'o':
+                    savedict[key] = [fit[key][0]]
+            elif key[2] =='n' and key[3] == 'n':
+                savedict[key] = [[fit[key][0][0]]]
+    elif smallsave == False:
+        print('Error, can only do small save with sep masses' )
+    print('Started gv.gdump to {1}, smallsave = {0}'.format(smallsave,'{0}.pickle'.format(filename)),datetime.datetime.now())        
+    gv.gdump(savedict,'{0}.pickle'.format(filename))
+    print('Finished gv.gdump fit',datetime.datetime.now())
+    return()
 ######################################################################################################
 
 def print_p_p0(p,p0,prior):

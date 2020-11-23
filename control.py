@@ -400,13 +400,13 @@ Fp['binsize'] = 1
 ################ USER INPUTS ################################
 #############################################################
 
-Fit = C                                             # Choose to fit F, SF , UF
+Fit = Fp                                             # Choose to fit F, SF , UF
 FitMasses = [0,1,2,3]                                 # Choose which masses to fit
 FitTwists = [0,1,2,3,4]                               # Choose which twists to fit
 FitTs = [0,1,2,3]
-FitCorrs = [['BG','BNG'],['KG','KNG'],[['S'],['V'],['T']]]  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
-SaveFit = False
-noise = True #all noise
+FitCorrs = np.array([['BG','BNG'],['KG','KNG'],[['S'],['V'],['T']]],dtype=object)  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
+SaveFit = True
+noise = False #all noise
 SvdFactor = 1.0*Fit['svd']                       # Multiplies saved SVD
 PriorLoosener = 1.0                   # Multiplies all prior error by loosener
 Nmax = 4                               # Number of exp to fit for 2pts in chained, marginalised fit
@@ -414,6 +414,7 @@ Nmin = 4                              #Number to start on
 FitToGBF = False                  # If false fits to Nmax
 Chained = False   # If False puts all correlators above in one fit no matter how they are organised
 Marginalised = False # set to eg 6. Two points will be run up to 6 then marginalised to Nmin<N<Nmax
+SepMass = True
 ####
 ResultPlots = False         # Tell what to plot against, "Q", "N","Log(GBF)", False
 smallsave = True #saves only the ground state non-oscillating and 3pts
@@ -434,10 +435,19 @@ def main():
     make_params(Fit,FitMasses,FitTwists,FitTs,daughters,currents,parents)
     # make models
     if Chained:
-        modelsA,modelsB = make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents,SvdFactor,Chained,allcorrs,links,parrlinks)
+        modelsA,modelsB = make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents,SvdFactor,Chained,allcorrs,links,parrlinks,SepMass)
         data = make_data('{0}{1}.gpl'.format(Fit['file_location'],Fit['filename']),Fit['binsize'])
+    elif SepMass:
+        massmodels = collections.OrderedDict()
+        data = make_data('{0}{1}.gpl'.format(Fit['file_location'],Fit['filename']),Fit['binsize'])
+        masslist = copy.deepcopy(Fit['masses'])
+        for mass in masslist:
+            massmodels[mass] = {}
+            Fit['masses'] = [mass]
+            massmodels[mass]['models'],massmodels[mass]['svdcut'] = make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents,SvdFactor,Chained,allcorrs,links,parrlinks,SepMass) 
+        Fit['masses'] = copy.deepcopy(masslist)
     else: 
-        models,svdcut = make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents,SvdFactor,Chained,allcorrs,links,parrlinks)
+        models,svdcut = make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents,SvdFactor,Chained,allcorrs,links,parrlinks,SepMass)
         data = make_pdata('{0}{1}.gpl'.format(Fit['file_location'],Fit['filename']),models,Fit['binsize'])#process for speed
         
 ############################ Do chained fit #########################################################
@@ -472,7 +482,23 @@ def main():
             for N in range(Nmin,Nmax+1):
                 prior = make_prior(Fit,Marginalised,allcorrs,currents,daughters,parents,PriorLoosener,data,notwist0,non_oscillating)
                 do_chained_marginalised_fit(data,prior,N,modelsA,modelsB,Fit,noise,currents,allcorrs,SvdFactor,PriorLoosener,FitCorrs,SaveFit,smallsave,None,Marginalised)
+
+################################ do SepMass fit ######################################################
+
+    elif SepMass:
+        for N in range(Nmin,Nmax+1):
+            masslist = copy.deepcopy(Fit['masses'])
+            result = gv.BufferDict()
+            priors = collections.OrderedDict()
+            for mass in masslist:
+                Fit['masses'] = [mass]
+                prior = make_prior(Fit,N,allcorrs,currents,daughters,parents,PriorLoosener,data,notwist0,non_oscillating)
+                priors[mass] = prior
+                result[mass] = do_sep_mass_fit(data,prior,N,massmodels[mass]['models'],massmodels[mass]['svdcut'],Fit,noise,currents,allcorrs,SvdFactor,PriorLoosener,SaveFit,smallsave,None)
+            Fit['masses'] = copy.deepcopy(masslist)
+            combine_sep_mass_fits(result,Fit,priors,allcorrs,N,SvdFactor,PriorLoosener,currents,SaveFit,smallsave)
 ######################### Do unchained fit ############################################################
+    
     else:
         if FitToGBF:
             N = Nmin
