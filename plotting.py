@@ -69,7 +69,7 @@ def plots(Fit,daughters,parents,currents):
     if not os.path.exists(directory):
         os.makedirs(directory)
         print("Creating all plots for {0}".format(Fit['filename']))
-        data = make_data('{0}{1}.gpl'.format(Fit['file_location'],Fit['filename']))
+        data = make_data('{0}{1}.gpl'.format(Fit['file_location'],Fit['filename']),Fit['binsize'])
     else:
         print("Plots for {0} already exist".format(Fit['filename']))
         return()

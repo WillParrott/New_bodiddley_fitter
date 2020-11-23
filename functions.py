@@ -15,8 +15,7 @@ import copy
 #from plotting import *
 import lsqfit
 lsqfit.nonlinear_fit.set(fitter='gsl_multifit',alg='subspace2D',scaler='more',solver='cholesky')#,solver='cholesky')
-####################################
-binsize = 1 
+#################################### 
 maxiter=5000
 #######################################################################################################
 
@@ -67,12 +66,13 @@ def make_params(Fit,FitMasses,FitTwists,FitTs,daughters,currents,parents):
 
 #######################################################################################################
 
-def make_data(filename):
+def make_data(filename,binsize):
     # Reads in filename.gpl, checks all keys have same configuration numbers, returns averaged data
- 
-    dset = cf.read_dataset(filename)
+    print('Reading data, binsize = ', binsize) 
+    dset = cf.read_dataset(filename,binsize=binsize)
     sizes = []
     for key in dset:
+        #print(key,np.shape(dset[key]))
         sizes.append(np.shape(dset[key]))
     if len(set(sizes)) != 1:
         print('Not all elements of gpl the same size')
@@ -82,9 +82,10 @@ def make_data(filename):
 
 ######################################################################################################
 
-def make_pdata(filename,models):
+def make_pdata(filename,models,binsize):
     # Reads in filename.gpl, checks all keys have same configuration numbers, returns averaged data 
-    dset = cf.read_dataset(filename)
+    print('Reading data, binsize = ', binsize)
+    dset = cf.read_dataset(filename,binsize=binsize)
     sizes = []
     for key in dset:
         #print(key,np.shape(dset[key]))
@@ -203,11 +204,12 @@ def effective_V_calc(corr,daughter,parent,correlator,dcorr,pcorr,Fit,mass,twist,
 #######################################################################################################
 
 def SVD_diagnosis(Fit,models,corrs,svdfac,currents):
+    binsize = Fit['binsize']
     #Feed models and corrs (list of corrs in this SVD cut)
     if list(set(corrs).intersection(currents)) ==[]:
-        filename = 'SVD/{0}{1}{2}{3}{4}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(corrs))
+        filename = 'SVD/{0}{1}{2}{3}{4}{5}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(corrs),binsize)
     else:
-        filename = 'SVD/{0}{1}{2}{3}{4}{5}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(corrs),strip_list(Fit['Ts']))
+        filename = 'SVD/{0}{1}{2}{3}{4}{5}{6}'.format(Fit['conf'],Fit['filename'],strip_list(Fit['masses']),strip_list(Fit['twists']),strip_list(corrs),strip_list(Fit['Ts']),binsize)
     #print(filename)
     for corr in corrs:
        if 'tmin{0}'.format(corr) in Fit:
@@ -225,7 +227,7 @@ def SVD_diagnosis(Fit,models,corrs,svdfac,currents):
         pickle_off.close()
     else:
         print('Calculating SVD for {0}'.format(corrs))
-        s = gv.dataset.svd_diagnosis(cf.read_dataset('{0}{1}.gpl'.format(Fit['file_location'],Fit['filename'])), models=models, nbstrap=20)
+        s = gv.dataset.svd_diagnosis(cf.read_dataset('{0}{1}.gpl'.format(Fit['file_location'],Fit['filename']),binsize=binsize), models=models, nbstrap=20)
         svd = s.svdcut
         ######## save plot ##########################
         plt.figure()
@@ -356,6 +358,7 @@ def elements_in_FitCorrs(a):
 ######################################################################################################
 
 def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,notwist0,non_oscillating):
+    No = N  # number of oscillating exponentials
     prior =  gv.BufferDict()
     tw_corr = True
     otw_corr = True
@@ -385,8 +388,8 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,notwist0,
                 prior['log({0}:a)'.format(tag)][0] = gv.log(gv.gvar(a_eff.mean,loosener*Fit['loosener']*a_eff.mean))
                 prior['log(dE:{0})'.format(tag)][0] = gv.log(gv.gvar(M_eff.mean,loosener*Fit['Mloosener']*M_eff.mean))
                 # Parent -- oscillating part
-                prior['log(o{0}:a)'.format(tag)] = gv.log(gv.gvar(N * [an]))
-                prior['log(dE:o{0})'.format(tag)] = gv.log(gv.gvar(N * [En]))
+                prior['log(o{0}:a)'.format(tag)] = gv.log(gv.gvar(No * [an]))
+                prior['log(dE:o{0})'.format(tag)] = gv.log(gv.gvar(No * [En]))
                 prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.gvar((M_eff+gv.gvar(En)*(4/5)).mean,loosener*Fit['oMloosener']*((M_eff+gv.gvar(En)*(4/5)).mean)))
                 
                 
@@ -419,8 +422,8 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,notwist0,
                         newaon = aon
                         if twist == '0':
                             newaon = '{0}({1})'.format(gv.gvar(aon).mean/4,gv.gvar(aon).mean/2) #v small in the case of tw0
-                        prior['log(o{0}:a)'.format(tag)] = gv.log(gv.gvar(N * [newaon]))
-                        prior['log(dE:o{0})'.format(tag)] = gv.log(gv.gvar(N * [En]))
+                        prior['log(o{0}:a)'.format(tag)] = gv.log(gv.gvar(No * [newaon]))
+                        prior['log(dE:o{0})'.format(tag)] = gv.log(gv.gvar(No * [En]))
                         if twist !='0' and '0' in Fit['twists'] and 'log(dE:o{0})'.format(tag0) in prior and otw_corr:
                             prior['log(dE:o{0})'.format(tag)][0] = gv.log(gv.sqrt(prior['dE:o{0}'.format(tag0)][0]**2 + ap2) * (1 + prior['oc2_{0}'.format(corr)]*ap2/(np.pi)**2) )
                             #prior['log(o{0}:a)'.format(tag)][0] = gv.log((prior['o{0}:a'.format(tag0)][0]/gv.sqrt(1 + ap2/(prior['dE:o{0}'.format(tag0)][0])**2)) * (1 + prior['od2']*ap2/(np.pi)**2) )
@@ -461,17 +464,22 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,notwist0,
                     elif twist =='0' and daughters[currents.index(corr)] in non_oscillating :
                         prior['{0}Vnn_m{1}_tw{2}'.format(corr,mass,twist)] = gv.gvar(N * [N * [Vn]])
                         prior['{0}Vnn_m{1}_tw{2}'.format(corr,mass,twist)][0][0] = gv.gvar(Vnn0)
-                        prior['{0}Vno_m{1}_tw{2}'.format(corr,mass,twist)] = gv.gvar(N * [N * [Vn]])
+                        prior['{0}Vno_m{1}_tw{2}'.format(corr,mass,twist)] = gv.gvar(N * [No* [Vn]])
                         prior['{0}Vno_m{1}_tw{2}'.format(corr,mass,twist)][0][0] = gv.gvar(V0)     
                     else:
                         prior['{0}Vnn_m{1}_tw{2}'.format(corr,mass,twist)] = gv.gvar(N * [N * [Vn]])
                         prior['{0}Vnn_m{1}_tw{2}'.format(corr,mass,twist)][0][0] = gv.gvar(Vnn0)
-                        prior['{0}Vno_m{1}_tw{2}'.format(corr,mass,twist)] = gv.gvar(N * [N * [Vn]])
+                        prior['{0}Vno_m{1}_tw{2}'.format(corr,mass,twist)] = gv.gvar(N * [No * [Vn]])
                         prior['{0}Vno_m{1}_tw{2}'.format(corr,mass,twist)][0][0] = gv.gvar(V0)
-                        prior['{0}Voo_m{1}_tw{2}'.format(corr,mass,twist)] = gv.gvar(N * [N * [Vn]])
+                        prior['{0}Voo_m{1}_tw{2}'.format(corr,mass,twist)] = gv.gvar(No * [No * [Vn]])
                         prior['{0}Voo_m{1}_tw{2}'.format(corr,mass,twist)][0][0] = gv.gvar(V0)
-                        prior['{0}Von_m{1}_tw{2}'.format(corr,mass,twist)] = gv.gvar(N * [N * [Vn]])
+                        prior['{0}Von_m{1}_tw{2}'.format(corr,mass,twist)] = gv.gvar(No * [N * [Vn]])
                         prior['{0}Von_m{1}_tw{2}'.format(corr,mass,twist)][0][0] = gv.gvar(V0)
+           # for key in prior: 
+           #     if key[0] == corr:
+           #         for i in range(1,N):
+           #             for j in range(1,N):
+           #                 prior[key][i][j] = gv.gvar('0.0(5)')
     
                    
     #print(prior)
@@ -612,7 +620,7 @@ def save_fit(fit,Fit,allcorrs,fittype,Nexp,SvdFactor,PriorLoosener,currents,smal
                 savedict[key] = [[fit.palt[key][0][0]]]
     elif smallsave == False:
         savedict = fit.p
-    print('Started gv.gdump fit, smallsave = {0}'.format(smallsave),datetime.datetime.now())        
+    print('Started gv.gdump to {1}, smallsave = {0}'.format(smallsave,'{0}.pickle'.format(filename)),datetime.datetime.now())        
     gv.gdump(savedict,'{0}.pickle'.format(filename))
     print('Finished gv.gdump fit, starting save fit output',datetime.datetime.now())
     f = open('{0}.txt'.format(filename),'w')
