@@ -92,10 +92,18 @@ def plots(Fit,daughters,parents,currents):
             create_t_plot(directory,filename ,y[0],lab[0])
             filename = 'daughter_tw{0}_log.pdf'.format(twist)
             create_t_plot(directory,filename ,ylog[0],lab[0])
-        else:
+        elif len(set(daughters)) == 2:
             create_t_plot(directory,filename,y[0],lab[0],y[1],lab[1])
             filename = 'daughter_tw{0}_log.pdf'.format(twist)
             create_t_plot(directory,filename,ylog[0],lab[0],ylog[1],lab[1])
+        elif len(set(daughters)) == 3:
+            create_t_plot(directory,filename,y[0],lab[0],y[1],lab[1],y[2],lab[2])
+            filename = 'daughter_tw{0}_log.pdf'.format(twist)
+            create_t_plot(directory,filename,ylog[0],lab[0],ylog[1],lab[1],ylog[2],lab[2])
+        elif len(set(daughters)) == 4:
+            create_t_plot(directory,filename,y[0],lab[0],y[1],lab[1],y[3],lab[3],y[3],lab[3])
+            filename = 'daughter_tw{0}_log.pdf'.format(twist)
+            create_t_plot(directory,filename,ylog[0],lab[0],ylog[1],lab[1],ylog[3],lab[3],ylog[4],lab[4])
  ######### parents #########
     for mass in Fit['masses']:
         y = collections.OrderedDict()
@@ -116,10 +124,18 @@ def plots(Fit,daughters,parents,currents):
             create_t_plot(directory,filename,y[0],lab[0])
             filename = 'parent_m{0}_log.pdf'.format(mass)
             create_t_plot(directory,filename,ylog[0],lab[0])
-        else:
+        elif len(set(parents)) == 2:
             create_t_plot(directory,filename,y[0],lab[0],y[1],lab[1])
             filename = 'parent_m{0}_log.pdf'.format(mass)
             create_t_plot(directory,filename,ylog[0],lab[0],ylog[1],lab[1])
+        elif len(set(parents)) == 3:
+            create_t_plot(directory,filename,y[0],lab[0],y[1],lab[1],y[2],lab[2])
+            filename = 'parent_m{0}_log.pdf'.format(mass)
+            create_t_plot(directory,filename,ylog[0],lab[0],ylog[1],lab[1],ylog[2],lab[2])
+        elif len(set(parents)) == 4:
+            create_t_plot(directory,filename,y[0],lab[0],y[1],lab[1],y[2],lab[2],y[3],lab[3])
+            filename = 'parent_m{0}_log.pdf'.format(mass)
+            create_t_plot(directory,filename,ylog[0],lab[0],ylog[1],lab[1],ylog[2],lab[2],ylog[3],lab[3])
  ########## currents ###########
     for num,corr in enumerate(currents):
         for mass in Fit['masses']:

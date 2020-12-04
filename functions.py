@@ -489,7 +489,6 @@ def make_prior(Fit,N,allcorrs,currents,daughters,parents,loosener,data,notwist0,
            #                 prior[key][i][j] = gv.gvar('0.0(5)')
     
                    
-    #print(prior)
     return(prior)
             
 ######################################################################################################
@@ -622,9 +621,9 @@ def save_fit(fit,Fit,allcorrs,fittype,Nexp,SvdFactor,PriorLoosener,currents,smal
             if key[0] == 'l':
                 key2 = key.split('(')[1].split(')')[0]
                 if key2.split(':')[0] =='dE' and key2.split(':')[1][0] != 'o':
-                    savedict[key] = [fit.palt[key][0]]
+                    savedict[key] = [fit.p[key][0]] #was palt
             elif key[2] =='n' and key[3] == 'n':
-                savedict[key] = [[fit.palt[key][0][0]]]
+                savedict[key] = [[fit.p[key][0][0]]] #was palt
     elif smallsave == False:
         savedict = fit.p
     print('Started gv.gdump to {1}, smallsave = {0}'.format(smallsave,'{0}.pickle'.format(filename)),datetime.datetime.now())        
@@ -773,38 +772,40 @@ def do_sep_mass_fit(data,prior,Nexp,models,svdcut,Fit,noise,currents,allcorrs,Sv
 ######################################################################################################
 
 def combine_sep_mass_fits(result,Fit,priors,allcorrs,Nexp,SvdFactor,PriorLoosener,currents,save,smallsave):
-    # this is not very good. It only works if the shared parameters are common to all masses, and only averages the ground state  non-oscillating energy.
-    combined = gv.BufferDict()
     prior = gv.BufferDict()
-    shared = collections.OrderedDict()
-    for key in result[Fit['masses'][0]].p:
-        if key[0] == 'l':
-            key2 = key.split('(')[1].split(')')[0]
-            if key2.split(':')[0] =='dE' and key2.split(':')[1][0] != 'o':
-                if key in result[Fit['masses'][1]].p:
-                    shared[key] = []
-                    for mass2 in Fit['masses']:
-                        shared[key].append(result[mass2].p[key][0])
-    combined = copy.deepcopy(result[Fit['masses'][0]].palt)
+    combined = []
+    for mass in Fit['masses']:
+        smallresult = gv.BufferDict()
+        fit = result[mass].p
+        for key in fit:
+            if key[0] == 'l':
+                key2 = key.split('(')[1].split(')')[0]
+                if key2.split(':')[0] =='dE':
+                    smallresult[key] = [fit[key][0]]
+            elif key[2] =='n' and key[3] == 'n':
+                smallresult[key] = [[fit[key][0][0]]]
+        combined.append(smallresult)
+  
     prior = copy.deepcopy(priors[Fit['masses'][0]])
-    for mass in Fit['masses'][1:]:
-        for key in result[mass].p:
-            if key not in combined:
-                combined[key] = copy.deepcopy(result[mass].palt[key])
+    for mass in Fit['masses']:
+        for key in priors[mass]:
+            if key not in prior:
                 prior[key] = copy.deepcopy(priors[mass][key])
-    for key in shared:
-        combined[key][0] = lsqfit.wavg(shared[key])
-    
+    #print(combined)
+    final = lsqfit.wavg(combined)
+    #print(gv.evalcorr([final['SVnn_m0.433_tw0.8563'][0][0],final['SVnn_m0.683_tw0.8563'][0][0]]))
     chi = 0
     Q = 0
+    GBF =  0
     for mass in Fit['masses']:
         chi += (result[mass].chi2/result[mass].dof)/len(Fit['masses'])
         Q += (result[mass].Q)/len(Fit['masses'])
-    print('Mean chi^2/dof = {0:.3f} Q = {1:.3f}'.format(chi,Q))
-    print_results(combined,prior)#,Fit)
-    print_Z_V(combined,Fit,allcorrs)
+        GBF += result[mass].logGBF
+    print('Mean chi^2/dof = {0:.3f} Q = {1:.3f}, total logGBF {2:.1f}'.format(chi,Q,GBF))
+    print_results(final,prior)#,Fit)
+    print_Z_V(final,Fit,allcorrs)
     if save:
-        save_combined_fit(combined,Fit,allcorrs,'sep_mass',Nexp,SvdFactor,PriorLoosener,currents,smallsave,chi,Q)
+        save_combined_fit(final,Fit,allcorrs,'sep_mass',Nexp,SvdFactor,PriorLoosener,currents,smallsave,chi,Q)
     return()
 
 ######################################################################################################################
@@ -825,7 +826,7 @@ def save_combined_fit(fit,Fit,allcorrs,fittype,Nexp,SvdFactor,PriorLoosener,curr
                 savedict[key] = [[fit[key][0][0]]]
     elif smallsave == False:
         print('Error, can only do small save with sep masses' )
-    print('Started gv.gdump to {1}, smallsave = {0}'.format(smallsave,'{0}.pickle'.format(filename)),datetime.datetime.now())        
+    print('Started gv.gdump to {1}, smallsave = {0}'.format(smallsave,'{0}.pickle'.format(filename)),datetime.datetime.now())
     gv.gdump(savedict,'{0}.pickle'.format(filename))
     print('Finished gv.gdump fit',datetime.datetime.now())
     return()
