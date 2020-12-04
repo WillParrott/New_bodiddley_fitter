@@ -84,7 +84,7 @@ def make_data(filename,binsize):
 
 def make_pdata(filename,models,binsize):
     # Reads in filename.gpl, checks all keys have same configuration numbers, returns averaged data 
-    print('Reading data, binsize = ', binsize)
+    print('Reading processed data, binsize = ', binsize)
     dset = cf.read_dataset(filename,binsize=binsize)
     sizes = []
     for key in dset:
@@ -261,7 +261,7 @@ def SVD_diagnosis(Fit,models,corrs,svdfac,currents,SepMass):
 
 #######################################################################################################
 
-def make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents,svdfac,Chained,allcorrs,links,parrlinks,SepMass):
+def make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents,svdfac,Chained,allcorrs,links,parrlinks,SepMass,NoSVD=False):
     #several forms [(A,B,C,D)],[(A,B),(C),(D)],[(A,B),[(C),(D)]]
     #First make all models and then stick them into the correct chain
     models = collections.OrderedDict()
@@ -327,9 +327,11 @@ def make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents
         finalmodels = []
         for corr in allcorrs:
             finalmodels.extend(models['{0}'.format(corr)])
-        svd = SVD_diagnosis(Fit,finalmodels,allcorrs,svdfac,currents,SepMass)
-        return(tuple(finalmodels),svd)                
-    
+        if NoSVD == False:
+            svd = SVD_diagnosis(Fit,finalmodels,allcorrs,svdfac,currents,SepMass)
+            return(tuple(finalmodels),svd)                
+        else:
+            return(tuple(finalmodels))
 
 #######################################################################################################
 
@@ -759,10 +761,11 @@ def do_sep_mass_fit(data,prior,Nexp,models,svdcut,Fit,noise,currents,allcorrs,Sv
     #if GBF = None doesn't pass GBF, else passed GBF 
     #do chained fit with no marginalisation Nexp = NMax
     print('Models',models)
+    #print(data)
     fitter = cf.CorrFitter(models=models, maxit=maxiter, fast=False, tol=(1e-6,0.0,0.0))
     p0 = get_p0(Fit,'sepmass',Nexp,allcorrs,prior,allcorrs) # FitCorrs = allcorrs 
     print(30 * '=','Seperate Mass Fit','Nexp =',Nexp,'Date',datetime.datetime.now())
-    fit = fitter.lsqfit(data=data, prior=prior, p0=p0, svdcut=svdcut, noise=noise,debug=True)
+    fit = fitter.lsqfit(pdata=data, prior=prior, p0=p0, svdcut=svdcut, noise=noise,debug=True)
     update_p0(fit.pmean,fit.pmean,Fit,'sepmass',Nexp,allcorrs,allcorrs,fit.Q) #fittype=chained, for marg,includeN
     print(fit)
     print('chi^2/dof = {0:.3f} Q = {1:.3f} logGBF = {2:.0f}'.format(fit.chi2/fit.dof,fit.Q,fit.logGBF))
@@ -826,6 +829,7 @@ def save_combined_fit(fit,Fit,allcorrs,fittype,Nexp,SvdFactor,PriorLoosener,curr
                 savedict[key] = [[fit[key][0][0]]]
     elif smallsave == False:
         print('Error, can only do small save with sep masses' )
+    #print(gv.evalcorr([savedict['SVnn_m0.433_tw0.8563'][0][0],savedict['SVnn_m0.683_tw0.8563'][0][0]]))
     print('Started gv.gdump to {1}, smallsave = {0}'.format(smallsave,'{0}.pickle'.format(filename)),datetime.datetime.now())
     gv.gdump(savedict,'{0}.pickle'.format(filename))
     print('Finished gv.gdump fit',datetime.datetime.now())

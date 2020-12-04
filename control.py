@@ -400,18 +400,18 @@ Fp['binsize'] = 1
 ################ USER INPUTS ################################
 #############################################################
 
-Fit = Fp                                            # Choose to fit F, SF , UF
+Fit = UF                                            # Choose to fit F, SF , UF
 FitMasses = [0,1,2,3]                                 # Choose which masses to fit
 FitTwists = [0,1,2,3,4]                               # Choose which twists to fit
 FitTs = [0,1,2,3]
 FitCorrs = np.array([['BG','BNG'],['KG','KNG'],[['S'],['V'],['T']]],dtype=object)  #Choose which corrs to fit ['G','NG','D','S','V'], set up in chain [[link1],[link2]], [[parrallell1],[parallell2]] ...]
-SaveFit = False
-noise = True #'all noise
-SepMass = False
+SaveFit = True
+noise = False #'all noise
+SepMass = True
 SvdFactor = 1.0*Fit['svd']                       # Multiplies saved SVD
 PriorLoosener = 1.0                   # Multiplies all prior error by loosener
-Nmax = 4                              # Number of exp to fit for 2pts in chained, marginalised fit
-Nmin = 4                              #Number to start on
+Nmax = 5                              # Number of exp to fit for 2pts in chained, marginalised fit
+Nmin = 5                              #Number to start on
 FitToGBF = False                  # If false fits to Nmax
 Chained = False   # If False puts all correlators above in one fit no matter how they are organised
 Marginalised = False # set to eg 6. Two points will be run up to 6 then marginalised to Nmin<N<Nmax
@@ -440,7 +440,9 @@ def main():
         data = make_data('{0}{1}.gpl'.format(Fit['file_location'],Fit['filename']),Fit['binsize'])
     elif SepMass:
         massmodels = collections.OrderedDict()
-        data = make_data('{0}{1}.gpl'.format(Fit['file_location'],Fit['filename']),Fit['binsize'])
+        allmodels = make_models(Fit,FitCorrs,notwist0,non_oscillating,daughters,currents,parents,SvdFactor,Chained,allcorrs,links,parrlinks,False,NoSVD=True)
+        data = make_pdata('{0}{1}.gpl'.format(Fit['file_location'],Fit['filename']),allmodels,Fit['binsize'])
+        #data = make_data('{0}{1}.gpl'.format(Fit['file_location'],Fit['filename']),Fit['binsize'])
         masslist = copy.deepcopy(Fit['masses'])
         for mass in masslist:
             massmodels[mass] = {}
